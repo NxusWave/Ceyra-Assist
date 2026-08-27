@@ -1,6 +1,6 @@
 {
   "name": "Ceyra AI",
-  "description": "Trilingual AI platform engineered for Sri Lankan enterprise customer support, voice, and CRM in Sinhala, Tamil, and English.",
+  "description": "Trilingual AI customer support platform engineered for Sri Lankan businesses in Sinhala, Tamil, and Singlish.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

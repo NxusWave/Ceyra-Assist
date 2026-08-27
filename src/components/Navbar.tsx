@@ -28,8 +28,7 @@ export default function Navbar({
   }, []);
 
   const navLinks = [
-    { name: 'Products', href: '#products' },
-    { name: 'Support AI', href: '#featured-support' },
+    { name: 'Assist', href: '#featured-support' },
     { name: 'How It Works', href: '#how-it-works' },
     { name: 'Capabilities', href: '#capabilities' },
     { name: 'Solutions', href: '#solutions' },
@@ -65,7 +64,7 @@ export default function Navbar({
                 CEYRA
               </span>
               <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-white/5 text-violet-400 border border-white/10">
-                AI
+                Assist
               </span>
             </div>
           </a>

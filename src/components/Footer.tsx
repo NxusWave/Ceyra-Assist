@@ -14,13 +14,13 @@ export default function Footer() {
                 Ceyra
               </span>
               <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-white/5 text-violet-400 border border-white/10">
-                AI
+                Assist
               </span>
             </a>
 
             <p className="text-gray-400 text-xs leading-relaxed max-w-sm">
-              The modern trilingual AI SaaS platform powering high-resolution customer support,
-              communication, and business operations for growing Sri Lankan businesses.
+              The modern trilingual AI customer support platform engineered for Sri Lankan businesses —
+              delivering instant, fluent customer resolution in Sinhala, Tamil, and Singlish.
             </p>
 
             <div className="pt-2 flex items-center gap-2 text-[11px] text-gray-300">
@@ -33,47 +33,25 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Column 1: Products */}
+          {/* Column 1: Product */}
           <div className="space-y-3">
             <h4 className="text-xs font-bold text-white uppercase tracking-wider">
-              Products
+              Product
             </h4>
             <ul className="space-y-2">
               <li>
-                <a href="#products" className="hover:text-white transition-colors flex items-center gap-1.5">
-                  <span>Ceyra Support AI</span>
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-green-500/20 text-green-400">
-                    LIVE
-                  </span>
+                <a href="#how-it-works" className="hover:text-white transition-colors">
+                  How it works
                 </a>
               </li>
               <li>
-                <a href="#products" className="hover:text-white transition-colors flex items-center gap-1.5">
-                  <span>Ceyra Voice</span>
-                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-gray-400">
-                    SOON
-                  </span>
-                </a>
-              </li>
-              <li>
-                <a href="#products" className="hover:text-white transition-colors flex items-center gap-1.5">
-                  <span>Ceyra CRM</span>
-                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-gray-400">
-                    SOON
-                  </span>
-                </a>
-              </li>
-              <li>
-                <a href="#products" className="hover:text-white transition-colors flex items-center gap-1.5">
-                  <span>Ceyra Automations</span>
-                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-gray-400">
-                    SOON
-                  </span>
+                <a href="#capabilities" className="hover:text-white transition-colors">
+                  Features
                 </a>
               </li>
               <li>
                 <a href="#pricing" className="hover:text-white transition-colors">
-                  Pricing Plans
+                  Pricing
                 </a>
               </li>
             </ul>

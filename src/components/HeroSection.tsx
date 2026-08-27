@@ -58,21 +58,20 @@ export default function HeroSection({
           <div className="lg:col-span-7 space-y-7 text-left">
             {/* Small Badge */}
             <div className="inline-flex px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold uppercase tracking-widest text-violet-400">
-              AI built for growing businesses
+              Ceyra Assist — AI support for Sri Lankan businesses
             </div>
 
             {/* Oversized Bold Headline */}
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1] text-white">
-              AI products that help your business{' '}
+              Built for how Sri Lankans{' '}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-blue-400">
-                do more.
+                actually chat.
               </span>
             </h1>
 
             {/* Supporting Copy */}
             <p className="text-lg text-gray-400 max-w-lg leading-relaxed">
-              From customer support to intelligent CRM, Ceyra provides practical AI tools designed
-              for the unique communication needs of Sri Lankan businesses in Sinhala, Tamil, and English.
+              AI customer support in Sinhala, Tamil, or Singlish — set up yourself, no meetings, no jargon. Live on your website in about 15 minutes.
             </p>
 
             {/* CTAs */}
@@ -83,7 +82,7 @@ export default function HeroSection({
                 onClick={onExploreProducts}
                 className="px-8 py-4 bg-white text-black font-bold rounded-xl hover:bg-gray-100 transition-colors flex items-center justify-center gap-2 group active:scale-98"
               >
-                <span>Explore products</span>
+                <span>See how it works</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </button>
 
@@ -93,7 +92,7 @@ export default function HeroSection({
                 onClick={onOpenDemo}
                 className="px-8 py-4 bg-white/5 border border-white/10 text-white font-bold rounded-xl hover:bg-white/10 transition-colors flex items-center justify-center gap-2 active:scale-98"
               >
-                <span>Book a demo</span>
+                <span>Get started free</span>
               </button>
             </div>
 
@@ -121,7 +120,7 @@ export default function HeroSection({
               <div className="flex justify-between items-center pb-3 border-b border-white/5">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-bold tracking-tight text-white">
-                    Ceyra Support AI
+                    Ceyra Assist
                   </span>
                 </div>
                 <div className="flex items-center gap-2">

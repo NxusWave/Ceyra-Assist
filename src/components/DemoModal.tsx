@@ -10,7 +10,7 @@ interface DemoModalProps {
 export default function DemoModal({
   isOpen,
   onClose,
-  initialProductOrPlan = 'Ceyra Support AI',
+  initialProductOrPlan = 'Ceyra Assist',
 }: DemoModalProps) {
   const [step, setStep] = useState<'form' | 'success'>('form');
   const [formData, setFormData] = useState({
@@ -186,7 +186,7 @@ export default function DemoModal({
 
             <p className="text-sm text-gray-300 max-w-sm mx-auto leading-relaxed">
               Thank you, <span className="text-white font-semibold">{formData.name || 'Friend'}</span>.
-              We&apos;ve generated your custom Ceyra Support AI instance and sent onboarding credentials
+              We&apos;ve generated your custom Ceyra Assist instance and sent onboarding credentials
               to <span className="text-violet-300 font-semibold">{formData.email || 'your email'}</span>.
             </p>
 

@@ -38,7 +38,7 @@ export default function FeaturedSupportAI({ onOpenDemo }: FeaturedSupportAIProps
           {/* Left Column: Headline, Copy, Bullets, CTA */}
           <div className="lg:col-span-5 space-y-6 text-left">
             <div className="inline-flex px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold uppercase tracking-widest text-violet-400">
-              Deep Dive · Ceyra Support AI
+              Deep Dive · Ceyra Assist
             </div>
 
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white tracking-tight leading-[1.15]">
@@ -49,7 +49,7 @@ export default function FeaturedSupportAI({ onOpenDemo }: FeaturedSupportAIProps
             </h2>
 
             <p className="text-base text-gray-400 leading-relaxed font-normal">
-              Ceyra Support AI learns directly from your website URLs, PDF product guides, and past
+              Ceyra Assist learns directly from your website URLs, PDF product guides, and past
               WhatsApp chats. It resolves repetitive customer questions 24/7 across Sinhala, Tamil,
               and English with zero hallucinations.
             </p>
@@ -91,7 +91,7 @@ export default function FeaturedSupportAI({ onOpenDemo }: FeaturedSupportAIProps
               <button
                 type="button"
                 id="build-chatbot-featured-btn"
-                onClick={() => onOpenDemo('Ceyra Support AI')}
+                onClick={() => onOpenDemo('Ceyra Assist')}
                 className="px-6 py-3.5 rounded-full text-sm font-semibold text-white bg-violet-600 hover:bg-violet-500 shadow-lg shadow-violet-600/25 transition-all flex items-center gap-2 group active:scale-98"
               >
                 <span>Build your chatbot</span>

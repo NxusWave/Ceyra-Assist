@@ -2,12 +2,10 @@ import { useState } from 'react';
 import Navbar from './components/Navbar';
 import HeroSection from './components/HeroSection';
 import LogoStrip from './components/LogoStrip';
-import ProductsBentoGrid from './components/ProductsBentoGrid';
 import FeaturedSupportAI from './components/FeaturedSupportAI';
 import HowItWorks from './components/HowItWorks';
 import CapabilitiesBento from './components/CapabilitiesBento';
 import IndustriesSection from './components/IndustriesSection';
-import EcosystemSection from './components/EcosystemSection';
 import TestimonialsSection from './components/TestimonialsSection';
 import PricingSection from './components/PricingSection';
 import FinalCTA from './components/FinalCTA';
@@ -19,7 +17,7 @@ import { Language } from './types';
 
 export default function App() {
   const [demoModalOpen, setDemoModalOpen] = useState(false);
-  const [selectedPlanOrProduct, setSelectedPlanOrProduct] = useState<string>('Ceyra Support AI');
+  const [selectedPlanOrProduct, setSelectedPlanOrProduct] = useState<string>('Ceyra Assist');
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [currentLang, setCurrentLang] = useState<Language>('en');
 
@@ -31,7 +29,7 @@ export default function App() {
   };
 
   const handleExploreProducts = () => {
-    const el = document.getElementById('products');
+    const el = document.getElementById('how-it-works');
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });
     }
@@ -54,7 +52,7 @@ export default function App() {
       <main className="flex-grow">
         {/* 2. Hero Section */}
         <HeroSection
-          onOpenDemo={() => handleOpenDemo('Ceyra Support AI')}
+          onOpenDemo={() => handleOpenDemo('Ceyra Assist')}
           onExploreProducts={handleExploreProducts}
           selectedLang={currentLang}
           onSelectLang={setCurrentLang}
@@ -63,35 +61,29 @@ export default function App() {
         {/* 3. Slim Trusted-by Logo Strip */}
         <LogoStrip />
 
-        {/* 4. Products Bento Grid */}
-        <ProductsBentoGrid onOpenDemo={handleOpenDemo} />
-
-        {/* 5. Featured Ceyra Support AI Section */}
+        {/* 4. Featured Ceyra Assist Section */}
         <FeaturedSupportAI onOpenDemo={handleOpenDemo} />
 
-        {/* 6. Three-Step "How It Works" Section */}
+        {/* 5. Three-Step "How It Works" Section */}
         <HowItWorks onOpenDemo={() => handleOpenDemo('Ceyra Fast Setup')} />
 
-        {/* 7. Capabilities Bento Grid */}
+        {/* 6. Capabilities Bento Grid */}
         <CapabilitiesBento />
 
-        {/* 8. Industry / Use-Case Cards */}
+        {/* 7. Industry / Use-Case Cards */}
         <IndustriesSection onOpenDemo={handleOpenDemo} />
 
-        {/* 9. One Connected AI Platform Ecosystem Section */}
-        <EcosystemSection onOpenDemo={handleOpenDemo} />
-
-        {/* 10. Testimonials Section */}
+        {/* 8. Testimonials Section */}
         <TestimonialsSection />
 
-        {/* 11. Pricing Preview Section */}
+        {/* 9. Pricing Preview Section */}
         <PricingSection onSelectPlan={(plan) => handleOpenDemo(plan)} />
 
-        {/* 12. Final CTA Section */}
+        {/* 10. Final CTA Section */}
         <FinalCTA onOpenDemo={handleOpenDemo} />
       </main>
 
-      {/* 13. Minimal Footer */}
+      {/* 11. Minimal Footer */}
       <Footer />
 
       {/* Interactive Modals & Floating Tester */}

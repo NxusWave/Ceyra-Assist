@@ -47,7 +47,7 @@ export const TRUSTED_LOGOS = [
 export const PRODUCTS_LIST: ProductItem[] = [
   {
     id: 'support-ai',
-    title: 'Ceyra Support AI',
+    title: 'Ceyra Assist',
     tagline: 'Autonomous trilingual website & WhatsApp support agent.',
     description:
       'The flagship conversational AI platform that indexes your website catalog, PDFs, and business spreadsheets to resolve customer inquiries 24/7 in Sinhala, Tamil, and English with zero hallucination.',
@@ -397,7 +397,7 @@ export const TESTIMONIALS_LIST: TestimonialItem[] = [
   {
     id: 't-1',
     quote:
-      'Before Ceyra, our villa reservations team was overwhelmed with late-night inquiries in Sinhala and English. Now, 80% of booking questions are resolved in under 2 seconds, and our direct bookings jumped by 35%.',
+      'Before Ceyra Assist, our villa reservations team was overwhelmed with late-night inquiries in Sinhala and English. Now, 80% of booking questions are resolved in under 2 seconds, and our direct bookings jumped by 35%.',
     author: 'Dulantha Senanayake',
     role: 'Managing Director',
     company: 'Southern Coast Heritage Villas',
@@ -408,7 +408,7 @@ export const TESTIMONIALS_LIST: TestimonialItem[] = [
   {
     id: 't-2',
     quote:
-      'Our e-commerce store gets thousands of messages asking for Cash on Delivery and size availability. Ceyra answers in fluent Sinhala and Tamil, which our customers adore. Setup took literally 10 minutes.',
+      'Our e-commerce store gets thousands of messages asking for Cash on Delivery and size availability. Ceyra Assist answers in fluent Sinhala and Tamil, which our customers adore. Setup took literally 10 minutes.',
     author: 'Nimalka Perera',
     role: 'Head of Growth',
     company: 'Lanka Apparel Hub',
@@ -419,7 +419,7 @@ export const TESTIMONIALS_LIST: TestimonialItem[] = [
   {
     id: 't-3',
     quote:
-      'We automated student intake inquiries across our 4 branches. Parents love getting immediate answers in Tamil or Sinhala even on Sundays. Ceyra has easily saved our team 20+ hours every week.',
+      'We automated student intake inquiries across our 4 branches. Parents love getting immediate answers in Tamil or Sinhala even on Sundays. Ceyra Assist has easily saved our team 20+ hours every week.',
     author: 'K. Sivakumaran',
     role: 'Director of Admissions',
     company: 'Apex Higher Education Academy',
