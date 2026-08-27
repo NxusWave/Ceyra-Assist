@@ -9,7 +9,7 @@ export default function CeyraLogo({ className = 'w-8 h-8', size }: CeyraLogoProp
   return (
     <div className={`relative inline-flex items-center justify-center flex-shrink-0 ${className}`} style={style}>
       <img
-        src="/round-hub-transparent.png"
+        src="https://bgpytpebhjybqhfrubha.supabase.co/storage/v1/object/public/Site%20Images/round-hub-transparent.png"
         alt="Ceyra Assist Logo"
         className="w-full h-full object-contain select-none pointer-events-none"
         referrerPolicy="no-referrer"
