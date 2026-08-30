@@ -36,7 +36,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0B] text-gray-100 selection:bg-violet-600 selection:text-white flex flex-col relative font-sans overflow-x-hidden">
+    <div className="min-h-screen bg-[#0A0A0B] text-gray-100 selection:bg-violet-600 selection:text-white flex flex-col relative font-sans">
       {/* Section-positioned ambient glow lights */}
       <div className="absolute top-[50px] left-[-100px] w-[600px] h-[600px] bg-violet-600/20 blur-[130px] rounded-full pointer-events-none -z-10" />
       <div className="absolute top-[1050px] right-[-150px] w-[550px] h-[550px] bg-blue-600/18 blur-[130px] rounded-full pointer-events-none -z-10" />
