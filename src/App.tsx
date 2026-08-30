@@ -37,9 +37,13 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#0A0A0B] text-gray-100 selection:bg-violet-600 selection:text-white flex flex-col relative font-sans overflow-x-hidden">
-      {/* Professional Polish ambient glow lights */}
-      <div className="fixed top-[-200px] left-[-100px] w-[500px] h-[500px] bg-violet-600/10 blur-[120px] rounded-full pointer-events-none -z-10" />
-      <div className="fixed bottom-[-100px] right-[-50px] w-[400px] h-[400px] bg-blue-600/10 blur-[100px] rounded-full pointer-events-none -z-10" />
+      {/* Section-positioned ambient glow lights */}
+      <div className="absolute top-[50px] left-[-100px] w-[600px] h-[600px] bg-violet-600/20 blur-[130px] rounded-full pointer-events-none -z-10" />
+      <div className="absolute top-[1050px] right-[-150px] w-[550px] h-[550px] bg-blue-600/18 blur-[130px] rounded-full pointer-events-none -z-10" />
+      <div className="absolute top-[2300px] left-[-150px] w-[500px] h-[500px] bg-purple-600/16 blur-[120px] rounded-full pointer-events-none -z-10" />
+      <div className="absolute top-[3425px] right-[-100px] w-[550px] h-[550px] bg-violet-600/18 blur-[130px] rounded-full pointer-events-none -z-10" />
+      <div className="absolute top-[4350px] left-[-100px] w-[500px] h-[500px] bg-blue-600/16 blur-[120px] rounded-full pointer-events-none -z-10" />
+      <div className="absolute bottom-[-150px] right-[-100px] w-[600px] h-[600px] bg-purple-600/20 blur-[130px] rounded-full pointer-events-none -z-10" />
 
       {/* 1. Sticky Navigation */}
       <Navbar
