@@ -58,20 +58,20 @@ export default function HeroSection({
           <div className="lg:col-span-7 space-y-7 text-left">
             {/* Small Badge */}
             <div className="inline-flex px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold uppercase tracking-widest text-violet-400">
-              Ceyra Assist — AI support for Sri Lankan businesses
+              Never miss a customer message again
             </div>
 
             {/* Oversized Bold Headline */}
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1] text-white">
-              Built for how Sri Lankans{' '}
+              Customers don't write perfect English.{' '}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-blue-400">
-                actually chat.
+                Neither should matter.
               </span>
             </h1>
 
             {/* Supporting Copy */}
             <p className="text-lg text-gray-400 max-w-lg leading-relaxed">
-              AI customer support in Sinhala, Tamil, or Singlish — set up yourself, no meetings, no jargon. Live on your website in about 15 minutes.
+              Sinhala, Tamil, Singlish — Ceyra Assist handles it all, so you don't have to hire a support team just to keep up.
             </p>
 
             {/* CTAs */}
