@@ -36,14 +36,18 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0B] text-gray-100 selection:bg-violet-600 selection:text-white flex flex-col relative font-sans">
+    <div className="min-h-screen bg-[#0A0A0B] text-gray-100 selection:bg-violet-600 selection:text-white flex flex-col relative font-sans isolate overflow-hidden">
+      {/* Background radial atmosphere & subtle grid */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.15),rgba(255,255,255,0))] pointer-events-none -z-10" />
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f1f2315_1px,transparent_1px),linear-gradient(to_bottom,#1f1f2315_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none -z-10" />
+
       {/* Section-positioned ambient glow lights */}
-      <div className="absolute top-[50px] left-[-100px] w-[600px] h-[600px] bg-violet-600/20 blur-[130px] rounded-full pointer-events-none -z-10" />
-      <div className="absolute top-[1050px] right-[-150px] w-[550px] h-[550px] bg-blue-600/18 blur-[130px] rounded-full pointer-events-none -z-10" />
-      <div className="absolute top-[2300px] left-[-150px] w-[500px] h-[500px] bg-purple-600/16 blur-[120px] rounded-full pointer-events-none -z-10" />
-      <div className="absolute top-[3425px] right-[-100px] w-[550px] h-[550px] bg-violet-600/18 blur-[130px] rounded-full pointer-events-none -z-10" />
-      <div className="absolute top-[4350px] left-[-100px] w-[500px] h-[500px] bg-blue-600/16 blur-[120px] rounded-full pointer-events-none -z-10" />
-      <div className="absolute bottom-[-150px] right-[-100px] w-[600px] h-[600px] bg-purple-600/20 blur-[130px] rounded-full pointer-events-none -z-10" />
+      <div className="absolute top-[2%] left-[-100px] w-[600px] h-[600px] bg-violet-600/25 blur-[130px] rounded-full pointer-events-none -z-10" />
+      <div className="absolute top-[18%] right-[-150px] w-[550px] h-[550px] bg-blue-600/22 blur-[130px] rounded-full pointer-events-none -z-10" />
+      <div className="absolute top-[36%] left-[-150px] w-[500px] h-[500px] bg-purple-600/20 blur-[120px] rounded-full pointer-events-none -z-10" />
+      <div className="absolute top-[54%] right-[-100px] w-[550px] h-[550px] bg-violet-600/22 blur-[130px] rounded-full pointer-events-none -z-10" />
+      <div className="absolute top-[72%] left-[-100px] w-[500px] h-[500px] bg-blue-600/20 blur-[120px] rounded-full pointer-events-none -z-10" />
+      <div className="absolute bottom-[-150px] right-[-100px] w-[600px] h-[600px] bg-purple-600/25 blur-[130px] rounded-full pointer-events-none -z-10" />
 
       {/* 1. Sticky Navigation */}
       <Navbar
