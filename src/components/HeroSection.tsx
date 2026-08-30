@@ -31,6 +31,8 @@ export default function HeroSection({
   const [activeTab, setActiveTab] = useState<Language>(selectedLang);
   const [inputVal, setInputVal] = useState('');
   const [submittedQuery, setSubmittedQuery] = useState<string | null>(null);
+  const [liveReply, setLiveReply] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const demoData = TRILINGUAL_HERO_DEMO[activeTab];
 
@@ -38,13 +40,44 @@ export default function HeroSection({
     setActiveTab(lang);
     onSelectLang(lang);
     setSubmittedQuery(null);
+    setLiveReply(null);
+    setIsLoading(false);
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!inputVal.trim()) return;
-    setSubmittedQuery(inputVal);
+    const query = inputVal.trim();
+    if (!query || isLoading) return;
+
+    setSubmittedQuery(query);
     setInputVal('');
+    setIsLoading(true);
+    setLiveReply(null);
+
+    try {
+      const res = await fetch('/api/hero-chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message: query }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Failed to fetch response: ${res.status}`);
+      }
+
+      const data = await res.json();
+      if (data && data.reply) {
+        setLiveReply(data.reply);
+      } else {
+        setLiveReply('Having trouble connecting right now, try again in a moment');
+      }
+    } catch (err) {
+      setLiveReply('Having trouble connecting right now, try again in a moment');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -164,14 +197,27 @@ export default function HeroSection({
 
                   {/* AI Response Card */}
                   <div className="bg-white/5 p-3.5 rounded-2xl rounded-tl-none border border-white/5 text-sm max-w-[90%] text-gray-200 leading-relaxed">
-                    <p>{demoData.answer}</p>
-                    <div className="flex items-center gap-2 mt-2 pt-2 border-t border-white/5 text-[10px] text-gray-400">
-                      <span className="text-green-400 font-medium">
-                        Confidence: {demoData.confidence}
-                      </span>
-                      <span>·</span>
-                      <span className="text-violet-400 font-medium">{demoData.intent}</span>
-                    </div>
+                    {isLoading ? (
+                      <div className="flex items-center gap-1.5 py-1">
+                        <span className="w-2 h-2 rounded-full bg-violet-400 animate-pulse" />
+                        <span className="w-2 h-2 rounded-full bg-violet-400 animate-pulse [animation-delay:200ms]" />
+                        <span className="w-2 h-2 rounded-full bg-violet-400 animate-pulse [animation-delay:400ms]" />
+                        <span className="text-xs text-gray-400 ml-2">Connecting to AI...</span>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="whitespace-pre-line">{submittedQuery ? liveReply : demoData.answer}</p>
+                        <div className="flex items-center gap-2 mt-2 pt-2 border-t border-white/5 text-[10px] text-gray-400">
+                          <span className="text-green-400 font-medium">
+                            {submittedQuery ? 'AI Generated' : `Confidence: ${demoData.confidence}`}
+                          </span>
+                          <span>·</span>
+                          <span className="text-violet-400 font-medium">
+                            {submittedQuery ? 'Colombo Boutique Bakery Demo' : demoData.intent}
+                          </span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
 
