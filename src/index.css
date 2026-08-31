@@ -40,6 +40,21 @@
   box-shadow: 0 0 50px -10px rgba(56, 189, 248, 0.25);
 }
 
+@keyframes inputAmbientGlow {
+  0%, 100% {
+    box-shadow: 0 0 10px -2px rgba(139, 92, 246, 0.2), 0 0 16px -4px rgba(59, 130, 246, 0.15);
+    border-color: rgba(139, 92, 246, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 18px 0 rgba(139, 92, 246, 0.4), 0 0 24px 1px rgba(59, 130, 246, 0.25);
+    border-color: rgba(167, 139, 250, 0.55);
+  }
+}
+
+.input-ambient-glow {
+  animation: inputAmbientGlow 2.5s ease-in-out infinite;
+}
+
 .bg-radial-grid {
   background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
   background-size: 32px 32px;

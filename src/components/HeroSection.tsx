@@ -233,12 +233,12 @@ export default function HeroSection({
                       onChange={(e) => setInputVal(e.target.value)}
                       placeholder={
                         activeTab === 'en'
-                          ? 'Ask anything in English...'
+                          ? 'Ask anything'
                           : activeTab === 'si'
-                          ? 'සිංහලෙන් ඕනෑම දෙයක් අසන්න...'
-                          : 'தமிழில் கேளுங்கள்...'
+                          ? 'ඕනෑම දෙයක් අහන්න'
+                          : 'எதையும் கேளுங்கள்'
                       }
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-gray-200 placeholder-gray-500 focus:outline-none focus:border-violet-500"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-gray-200 placeholder-gray-500 focus:outline-none focus:border-violet-500 input-ambient-glow transition-all"
                     />
                     <button
                       type="submit"
