@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
-import { X, Sparkles, CheckCircle2, ArrowRight, Bot, Globe, Shield } from 'lucide-react';
+import { X, Sparkles, CheckCircle2, ArrowRight, Shield, Mail, AlertCircle, Loader2 } from 'lucide-react';
+import { supabase } from '../lib/supabaseClient';
 
 interface DemoModalProps {
   isOpen: boolean;
@@ -13,9 +14,12 @@ export default function DemoModal({
   initialProductOrPlan = 'Ceyra Assist',
 }: DemoModalProps) {
   const [step, setStep] = useState<'form' | 'success'>('form');
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    password: '',
     phone: '',
     company: '',
     website: '',
@@ -25,13 +29,44 @@ export default function DemoModal({
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setStep('success');
+    setErrorMessage(null);
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/dashboard`,
+          data: {
+            full_name: formData.name,
+            phone: formData.phone,
+            company: formData.company,
+            website: formData.website,
+            primary_lang: formData.primaryLang,
+            plan: formData.plan,
+          },
+        },
+      });
+
+      if (error) {
+        setErrorMessage(error.message);
+        return;
+      }
+
+      setStep('success');
+    } catch (err: any) {
+      setErrorMessage(err.message || 'An unexpected error occurred. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleReset = () => {
     setStep('form');
+    setErrorMessage(null);
     onClose();
   };
 
@@ -46,7 +81,7 @@ export default function DemoModal({
 
         {/* Close Button */}
         <button
-          onClick={onClose}
+          onClick={handleReset}
           className="absolute top-5 right-5 p-2 rounded-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
         >
           <X className="w-5 h-5" />
@@ -64,6 +99,13 @@ export default function DemoModal({
             <p className="text-xs text-gray-400 mb-6">
               Selected Configuration: <span className="text-violet-400 font-semibold">{initialProductOrPlan}</span>
             </p>
+
+            {errorMessage && (
+              <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-start gap-2.5 text-xs text-rose-300">
+                <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0 mt-0.5" />
+                <div className="flex-1 leading-relaxed">{errorMessage}</div>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -99,6 +141,21 @@ export default function DemoModal({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-medium text-gray-300 mb-1">
+                    Password *
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    placeholder="•••••••• (min 6 characters)"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-violet-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-medium text-gray-300 mb-1">
                     Phone / WhatsApp *
                   </label>
                   <input
@@ -110,7 +167,9 @@ export default function DemoModal({
                     className="w-full px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-violet-500"
                   />
                 </div>
+              </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-medium text-gray-300 mb-1">
                     Company / Brand Name
@@ -123,19 +182,19 @@ export default function DemoModal({
                     className="w-full px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-violet-500"
                   />
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-[11px] font-medium text-gray-300 mb-1">
-                  Website URL or Shopify Store
-                </label>
-                <input
-                  type="text"
-                  placeholder="https://yourstore.lk (for instant knowledge indexing)"
-                  value={formData.website}
-                  onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-violet-500"
-                />
+                <div>
+                  <label className="block text-[11px] font-medium text-gray-300 mb-1">
+                    Website URL or Shopify Store
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="https://yourstore.lk"
+                    value={formData.website}
+                    onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-violet-500"
+                  />
+                </div>
               </div>
 
               <div>
@@ -156,10 +215,20 @@ export default function DemoModal({
 
               <button
                 type="submit"
-                className="w-full mt-2 py-3.5 rounded-full text-sm font-semibold text-white bg-violet-600 hover:bg-violet-500 shadow-lg shadow-violet-600/25 transition-all flex items-center justify-center gap-2"
+                disabled={loading}
+                className="w-full mt-2 py-3.5 rounded-full text-sm font-semibold text-white bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-violet-600/25 transition-all flex items-center justify-center gap-2"
               >
-                <span>Launch Assistant Workspace</span>
-                <ArrowRight className="w-4 h-4" />
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Creating Account...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Launch Assistant Workspace</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
               </button>
 
               <div className="flex items-center justify-center gap-4 text-[10px] text-gray-500 pt-2">
@@ -176,33 +245,21 @@ export default function DemoModal({
           </div>
         ) : (
           <div className="py-8 text-center space-y-4">
-            <div className="w-16 h-16 rounded-2xl bg-green-500/20 border border-green-500/30 flex items-center justify-center text-green-400 mx-auto">
-              <CheckCircle2 className="w-8 h-8" />
+            <div className="w-16 h-16 rounded-2xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center text-violet-400 mx-auto">
+              <Mail className="w-8 h-8" />
             </div>
 
             <h3 className="text-2xl font-bold text-white">
-              Workspace Initialized!
+              Check your email
             </h3>
 
             <p className="text-sm text-gray-300 max-w-sm mx-auto leading-relaxed">
-              Thank you, <span className="text-white font-semibold">{formData.name || 'Friend'}</span>.
-              We&apos;ve generated your custom Ceyra Assist instance and sent onboarding credentials
-              to <span className="text-violet-300 font-semibold">{formData.email || 'your email'}</span>.
+              Check your email to confirm your account, then come back and log in.
             </p>
 
-            <div className="p-4 rounded-2xl bg-black/40 border border-white/10 text-xs text-left max-w-sm mx-auto space-y-2">
-              <div className="flex justify-between text-gray-400">
-                <span>Selected Plan:</span>
-                <span className="text-white font-semibold">{formData.plan}</span>
-              </div>
-              <div className="flex justify-between text-gray-400">
-                <span>Bot ID:</span>
-                <span className="text-green-400 font-mono">cy_9918x_live</span>
-              </div>
-              <div className="flex justify-between text-gray-400">
-                <span>Languages:</span>
-                <span className="text-violet-300">Sinhala · Tamil · English</span>
-              </div>
+            <div className="p-4 rounded-2xl bg-black/40 border border-white/10 text-xs text-center max-w-sm mx-auto space-y-1">
+              <p className="text-gray-400">Confirmation sent to:</p>
+              <p className="text-violet-300 font-semibold truncate">{formData.email}</p>
             </div>
 
             <div className="pt-4">
