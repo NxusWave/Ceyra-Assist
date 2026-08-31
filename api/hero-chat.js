@@ -16,12 +16,8 @@ export default async function handler(req, res) {
   try {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ 
-        error: "GEMINI_API_KEY is missing",
-        envKeysFound: Object.keys(process.env).filter(k => k.toUpperCase().includes('GEMINI')),
-        totalEnvVarCount: Object.keys(process.env).length,
-        nodeEnv: process.env.NODE_ENV || "not set"
-      });
+      console.error('GEMINI_API_KEY is missing in this environment');
+      return res.status(500).json({ error: "GEMINI_API_KEY is missing" });
     }
 
     const ai = new GoogleGenAI({
@@ -38,6 +34,9 @@ export default async function handler(req, res) {
       contents: message,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
+        thinkingConfig: {
+          thinkingLevel: "low",
+        },
       },
     });
 
@@ -45,10 +44,6 @@ export default async function handler(req, res) {
     return res.status(200).json({ reply });
   } catch (error) {
     console.error('hero-chat error:', error);
-    return res.status(500).json({ 
-      error: "An error occurred while processing your request.", 
-      debug: error.message,
-      stack: error.stack 
-    });
+    return res.status(500).json({ error: "An error occurred while processing your request. Please try again later." });
   }
 }
