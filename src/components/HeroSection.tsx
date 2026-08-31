@@ -63,11 +63,17 @@ export default function HeroSection({
         body: JSON.stringify({ message: query }),
       });
 
+      const data = await res.json().catch(() => null);
+
       if (!res.ok) {
-        throw new Error(`Failed to fetch response: ${res.status}`);
+        if (data && data.error) {
+          setLiveReply(data.error);
+        } else {
+          setLiveReply('Having trouble connecting right now, try again in a moment');
+        }
+        return;
       }
 
-      const data = await res.json();
       if (data && data.reply) {
         setLiveReply(data.reply);
       } else {
