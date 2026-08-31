@@ -16,7 +16,12 @@ export default async function handler(req, res) {
   try {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ error: "GEMINI_API_KEY is missing", debug: "process.env.GEMINI_API_KEY was undefined" });
+      return res.status(500).json({ 
+        error: "GEMINI_API_KEY is missing",
+        envKeysFound: Object.keys(process.env).filter(k => k.toUpperCase().includes('GEMINI')),
+        totalEnvVarCount: Object.keys(process.env).length,
+        nodeEnv: process.env.NODE_ENV || "not set"
+      });
     }
 
     const ai = new GoogleGenAI({
