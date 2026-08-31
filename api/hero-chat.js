@@ -125,6 +125,10 @@ export default async function handler(req, res) {
     return res.status(200).json({ reply });
   } catch (error) {
     console.error('hero-chat error:', error);
-    return res.status(500).json({ error: "An error occurred while processing your request. Please try again later." });
+    return res.status(500).json({ 
+      error: "An error occurred while processing your request.", 
+      debug: error.message,
+      stack: error.stack 
+    });
   }
 }
