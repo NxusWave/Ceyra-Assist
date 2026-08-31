@@ -39,6 +39,7 @@ export default async function handler(req, res) {
     const reply = response.text || "Sorry, I could not generate a response.";
     return res.status(200).json({ reply });
   } catch (error) {
+    console.error('hero-chat error:', error);
     return res.status(500).json({ error: "An error occurred while processing your request. Please try again later." });
   }
 }
