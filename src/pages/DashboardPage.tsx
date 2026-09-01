@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Bot,
@@ -20,13 +20,22 @@ import {
   MessageSquare,
   Globe,
   Sliders,
+  Loader2,
 } from 'lucide-react';
 import CeyraLogo from '../components/CeyraLogo';
+import { supabase } from '../lib/supabaseClient';
 
 type ReplyLanguage = 'Auto-detect' | 'Sinhala' | 'Tamil' | 'English';
 type Tone = 'Friendly' | 'Formal' | 'Casual';
 
 export default function DashboardPage() {
+  const navigate = useNavigate();
+
+  // Auth & Business State
+  const [authChecking, setAuthChecking] = useState(true);
+  const [user, setUser] = useState<any>(null);
+  const [business, setBusiness] = useState<any>(null);
+
   // Form State
   const [chatbotName, setChatbotName] = useState('Colombo Boutique Bakery Support');
   const [publicAgentName, setPublicAgentName] = useState('Ceyra Assistant');
@@ -45,6 +54,95 @@ export default function DashboardPage() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function checkAuthAndBusiness() {
+      try {
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
+
+        if (sessionError || !session || !session.user) {
+          navigate('/', { replace: true });
+          return;
+        }
+
+        const currentUser = session.user;
+        if (isMounted) {
+          setUser(currentUser);
+        }
+
+        // Check the "businesses" table for a row where owner_id equals the logged-in user's id
+        const { data: existingBusinesses, error: fetchError } = await supabase
+          .from('businesses')
+          .select('*')
+          .eq('owner_id', currentUser.id);
+
+        if (fetchError) {
+          console.warn('Notice checking businesses table:', fetchError.message);
+        }
+
+        if (existingBusinesses && existingBusinesses.length > 0) {
+          const currentBusiness = existingBusinesses[0];
+          if (isMounted) {
+            setBusiness(currentBusiness);
+            if (currentBusiness.name) {
+              setChatbotName(`${currentBusiness.name} Support`);
+              setWelcomeMessage(
+                `Hi! Welcome to ${currentBusiness.name}. How can I assist you today?`
+              );
+            }
+          }
+        } else {
+          // If none exists yet, insert one using the user's id as owner_id and name from metadata
+          const defaultBusinessName =
+            currentUser.user_metadata?.company ||
+            currentUser.user_metadata?.full_name ||
+            'My Business';
+
+          const { data: newBusiness, error: insertError } = await supabase
+            .from('businesses')
+            .insert([
+              {
+                owner_id: currentUser.id,
+                name: defaultBusinessName,
+              },
+            ])
+            .select()
+            .single();
+
+          if (insertError) {
+            console.warn('Notice inserting business record:', insertError.message);
+          }
+
+          if (isMounted) {
+            setBusiness(newBusiness || { owner_id: currentUser.id, name: defaultBusinessName });
+            setChatbotName(`${defaultBusinessName} Support`);
+            setWelcomeMessage(
+              `Hi! Welcome to ${defaultBusinessName}. How can I assist you today?`
+            );
+          }
+        }
+      } catch (err) {
+        console.error('Session validation error:', err);
+        navigate('/', { replace: true });
+        return;
+      } finally {
+        if (isMounted) {
+          setAuthChecking(false);
+        }
+      }
+    }
+
+    checkAuthAndBusiness();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [navigate]);
 
   const navItems = [
     { name: 'Dashboard', icon: LayoutDashboard, href: '#', active: false },
@@ -115,6 +213,32 @@ export default function DashboardPage() {
     setSavedNotification(true);
     setTimeout(() => setSavedNotification(false), 3000);
   };
+
+  if (authChecking) {
+    return (
+      <div className="min-h-screen bg-[#0A0A0B] text-gray-100 flex flex-col items-center justify-center relative font-sans isolate overflow-hidden">
+        <div className="fixed inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.12),rgba(255,255,255,0))] pointer-events-none -z-10" />
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative">
+            <CeyraLogo className="w-12 h-12 animate-pulse" />
+            <div className="absolute -inset-2 bg-violet-600/20 blur-lg rounded-full -z-10" />
+          </div>
+          <div className="flex items-center gap-2 text-sm text-gray-400">
+            <Loader2 className="w-4 h-4 animate-spin text-violet-400" />
+            <span>Loading your workspace...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const businessDisplayName = business?.name || user?.user_metadata?.company || 'My Business';
+  const userInitials = (businessDisplayName || 'MB')
+    .split(' ')
+    .map((w: string) => w[0])
+    .join('')
+    .substring(0, 2)
+    .toUpperCase();
 
   return (
     <div className="min-h-screen bg-[#0A0A0B] text-gray-100 flex flex-col lg:flex-row font-sans selection:bg-violet-600 selection:text-white isolate">
@@ -212,12 +336,12 @@ export default function DashboardPage() {
             <ExternalLink className="w-3.5 h-3.5" />
           </Link>
           <div className="flex items-center gap-3 px-2 py-2 rounded-xl bg-white/[0.02] border border-white/5">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center text-xs font-bold text-white shadow-inner">
-              CB
+            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center text-xs font-bold text-white shadow-inner flex-shrink-0">
+              {userInitials}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-white truncate">Colombo Bakery</p>
-              <p className="text-[11px] text-gray-500 truncate">Pro Workspace</p>
+              <p className="text-xs font-medium text-white truncate">{businessDisplayName}</p>
+              <p className="text-[11px] text-gray-500 truncate">{user?.email || 'Pro Workspace'}</p>
             </div>
           </div>
         </div>
