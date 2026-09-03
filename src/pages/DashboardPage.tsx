@@ -21,6 +21,7 @@ import {
   Globe,
   Sliders,
   Loader2,
+  AlertCircle,
 } from 'lucide-react';
 import CeyraLogo from '../components/CeyraLogo';
 import { supabase } from '../lib/supabaseClient';
@@ -35,6 +36,13 @@ export default function DashboardPage() {
   const [authChecking, setAuthChecking] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [business, setBusiness] = useState<any>(null);
+  const [businessId, setBusinessId] = useState<string | null>(null);
+
+  // Chatbot persistence & editing state
+  const [savedChatbotId, setSavedChatbotId] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Form State
   const [chatbotName, setChatbotName] = useState('Colombo Boutique Bakery Support');
@@ -89,6 +97,7 @@ export default function DashboardPage() {
           const currentBusiness = existingBusinesses[0];
           if (isMounted) {
             setBusiness(currentBusiness);
+            setBusinessId(currentBusiness.id || null);
             if (currentBusiness.name) {
               setChatbotName(`${currentBusiness.name} Support`);
               setWelcomeMessage(
@@ -120,6 +129,9 @@ export default function DashboardPage() {
 
           if (isMounted) {
             setBusiness(newBusiness || { owner_id: currentUser.id, name: defaultBusinessName });
+            if (newBusiness?.id) {
+              setBusinessId(newBusiness.id);
+            }
             setChatbotName(`${defaultBusinessName} Support`);
             setWelcomeMessage(
               `Hi! Welcome to ${defaultBusinessName}. How can I assist you today?`
@@ -209,9 +221,68 @@ export default function DashboardPage() {
     setTestInput('');
   };
 
-  const handleSave = () => {
-    setSavedNotification(true);
-    setTimeout(() => setSavedNotification(false), 3000);
+  const handleSave = async () => {
+    if (isSaving) return;
+    setSaveError(null);
+    setIsSaving(true);
+
+    try {
+      let targetBusinessId = businessId || business?.id;
+
+      // Fallback check if businessId wasn't cached yet
+      if (!targetBusinessId && user?.id) {
+        const { data: bizRecord } = await supabase
+          .from('businesses')
+          .select('id')
+          .eq('owner_id', user.id)
+          .maybeSingle();
+
+        if (bizRecord?.id) {
+          targetBusinessId = bizRecord.id;
+          setBusinessId(bizRecord.id);
+        }
+      }
+
+      if (!targetBusinessId) {
+        throw new Error('Business profile could not be found. Please refresh the page and try again.');
+      }
+
+      // Insert new row into the chatbots table with specified columns only:
+      // business_id, name (Chatbot Name field), public_agent_name, welcome_message, brand_color, reply_language, tone.
+      // Leave avatar_url, system_prompt, ai_model, and is_active unset so their table defaults apply.
+      const { data: insertedChatbot, error: insertError } = await supabase
+        .from('chatbots')
+        .insert([
+          {
+            business_id: targetBusinessId,
+            name: chatbotName.trim() || 'My Chatbot',
+            public_agent_name: publicAgentName.trim() || 'Ceyra Assistant',
+            welcome_message: welcomeMessage.trim(),
+            brand_color: brandColor,
+            reply_language: replyLanguage,
+            tone: tone,
+          },
+        ])
+        .select()
+        .single();
+
+      if (insertError) {
+        throw insertError;
+      }
+
+      if (insertedChatbot?.id) {
+        setSavedChatbotId(insertedChatbot.id);
+        setIsEditing(true);
+      }
+
+      setSavedNotification(true);
+      setTimeout(() => setSavedNotification(false), 3000);
+    } catch (err: any) {
+      console.error('Error saving chatbot:', err);
+      setSaveError(err.message || 'Failed to save chatbot. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (authChecking) {
@@ -589,6 +660,14 @@ export default function DashboardPage() {
               </div>
             </div>
 
+            {/* Error message alert */}
+            {saveError && (
+              <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-start gap-2.5 text-xs text-rose-300 animate-fadeIn">
+                <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0 mt-0.5" />
+                <div className="flex-1 leading-relaxed">{saveError}</div>
+              </div>
+            )}
+
             {/* Bottom Form Actions */}
             <div className="pt-4 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -596,9 +675,15 @@ export default function DashboardPage() {
                   type="button"
                   id="save-continue-btn"
                   onClick={handleSave}
-                  className="flex-1 sm:flex-none px-6 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white text-sm font-semibold shadow-[0_0_20px_rgba(124,58,237,0.35)] transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+                  disabled={isSaving}
+                  className="flex-1 sm:flex-none px-6 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold shadow-[0_0_20px_rgba(124,58,237,0.35)] transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
                 >
-                  {savedNotification ? (
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : savedNotification ? (
                     <>
                       <Check className="w-4 h-4 text-emerald-300" />
                       <span>Changes Saved</span>
@@ -622,7 +707,7 @@ export default function DashboardPage() {
 
               {savedNotification && (
                 <span className="text-xs text-emerald-400 flex items-center gap-1.5 animate-fadeIn">
-                  <Check className="w-3.5 h-3.5" /> State updated in memory
+                  <Check className="w-3.5 h-3.5" /> Changes saved
                 </span>
               )}
             </div>
