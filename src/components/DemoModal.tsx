@@ -2,6 +2,8 @@ import { useState, type FormEvent } from 'react';
 import { X, Sparkles, CheckCircle2, ArrowRight, Shield, Mail, AlertCircle, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
+export const SIGNUP_PRODUCT = 'assist';
+
 interface DemoModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -54,6 +56,31 @@ export default function DemoModal({
       if (error) {
         setErrorMessage(error.message);
         return;
+      }
+
+      if (data.user) {
+        try {
+          const defaultBusinessName = formData.company || formData.name || 'My Business';
+          const { data: businessRow } = await supabase
+            .from('businesses')
+            .insert({
+              owner_id: data.user.id,
+              name: defaultBusinessName,
+            })
+            .select()
+            .single();
+
+          const businessId = businessRow?.id || null;
+          await supabase.from('packages').insert({
+            user_id: data.user.id,
+            business_id: businessId,
+            product: SIGNUP_PRODUCT,
+            status: 'trial',
+            plan: 'starter',
+          });
+        } catch (postSignupErr) {
+          console.warn('Notice creating package row on signup:', postSignupErr);
+        }
       }
 
       setStep('success');
