@@ -34,7 +34,7 @@ export default function HowItWorks({ onOpenDemo }: HowItWorksProps) {
           {HOW_IT_WORKS_STEPS.map((item) => (
             <div
               key={item.step}
-              className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md hover:border-white/20 transition-all duration-300 relative group flex flex-col justify-between"
+              className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md relative group flex flex-col justify-between transition-all duration-300 ease-out hover:scale-105 hover:border-violet-500/50 hover:shadow-xl hover:shadow-violet-600/20 hover:z-10"
             >
               <div>
                 {/* Step number badge & icon */}
@@ -76,11 +76,12 @@ export default function HowItWorks({ onOpenDemo }: HowItWorksProps) {
         <div className="mt-12 text-center">
           <button
             type="button"
+            id="how-it-works-cta-btn"
             onClick={onOpenDemo}
-            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-sm font-semibold text-white bg-violet-600 hover:bg-violet-500 shadow-lg shadow-violet-600/25 transition-all"
+            className="px-6 py-3.5 rounded-full text-sm font-semibold text-white bg-violet-600 hover:bg-violet-500 shadow-lg shadow-violet-600/25 transition-all inline-flex items-center gap-2 group active:scale-98"
           >
-            <span>Start your 3-step setup free</span>
-            <ArrowRight className="w-4 h-4" />
+            <span>Start 7-Day Free Trial</span>
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </button>
         </div>
       </div>

@@ -36,7 +36,7 @@ export default function CapabilitiesBento() {
         {/* 6-Card Bento Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* 1. Website and FAQ Training */}
-          <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md hover:border-white/20 transition-all flex flex-col justify-between group">
+          <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md transition-all duration-300 ease-out hover:scale-105 hover:border-violet-500/50 hover:shadow-xl hover:shadow-violet-600/20 hover:z-10 relative flex flex-col justify-between group">
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div className="w-10 h-10 rounded-lg bg-violet-600/20 border border-violet-500/30 flex items-center justify-center text-violet-400">
@@ -73,7 +73,7 @@ export default function CapabilitiesBento() {
           </div>
 
           {/* 2. Sinhala/Tamil/English Replies */}
-          <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md hover:border-white/20 transition-all flex flex-col justify-between group">
+          <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md transition-all duration-300 ease-out hover:scale-105 hover:border-violet-500/50 hover:shadow-xl hover:shadow-violet-600/20 hover:z-10 relative flex flex-col justify-between group">
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div className="w-10 h-10 rounded-lg bg-violet-600/20 border border-violet-500/30 flex items-center justify-center text-violet-400">
@@ -123,7 +123,7 @@ export default function CapabilitiesBento() {
           </div>
 
           {/* 3. Human Handover */}
-          <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md hover:border-white/20 transition-all flex flex-col justify-between group">
+          <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md transition-all duration-300 ease-out hover:scale-105 hover:border-violet-500/50 hover:shadow-xl hover:shadow-violet-600/20 hover:z-10 relative flex flex-col justify-between group">
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div className="w-10 h-10 rounded-lg bg-violet-600/20 border border-violet-500/30 flex items-center justify-center text-violet-400">
@@ -157,7 +157,7 @@ export default function CapabilitiesBento() {
           </div>
 
           {/* 4. Conversation Inbox */}
-          <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md hover:border-white/20 transition-all flex flex-col justify-between group">
+          <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md transition-all duration-300 ease-out hover:scale-105 hover:border-violet-500/50 hover:shadow-xl hover:shadow-violet-600/20 hover:z-10 relative flex flex-col justify-between group">
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div className="w-10 h-10 rounded-lg bg-violet-600/20 border border-violet-500/30 flex items-center justify-center text-violet-400">
@@ -199,7 +199,7 @@ export default function CapabilitiesBento() {
           </div>
 
           {/* 5. Brand Customization */}
-          <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md hover:border-white/20 transition-all flex flex-col justify-between group">
+          <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md transition-all duration-300 ease-out hover:scale-105 hover:border-violet-500/50 hover:shadow-xl hover:shadow-violet-600/20 hover:z-10 relative flex flex-col justify-between group">
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div className="w-10 h-10 rounded-lg bg-violet-600/20 border border-violet-500/30 flex items-center justify-center text-violet-400">
@@ -237,7 +237,7 @@ export default function CapabilitiesBento() {
           </div>
 
           {/* 6. Simple Website Embed */}
-          <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md hover:border-white/20 transition-all flex flex-col justify-between group">
+          <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-md transition-all duration-300 ease-out hover:scale-105 hover:border-violet-500/50 hover:shadow-xl hover:shadow-violet-600/20 hover:z-10 relative flex flex-col justify-between group">
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div className="w-10 h-10 rounded-lg bg-violet-600/20 border border-violet-500/30 flex items-center justify-center text-violet-400">

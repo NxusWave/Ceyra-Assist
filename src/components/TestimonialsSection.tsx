@@ -23,7 +23,7 @@ export default function TestimonialsSection() {
           {TESTIMONIALS_LIST.map((item) => (
             <div
               key={item.id}
-              className="rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md p-8 hover:border-white/20 transition-all flex flex-col justify-between group shadow-xl"
+              className="rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md p-8 flex flex-col justify-between group shadow-xl transition-all duration-300 ease-out hover:scale-105 hover:border-violet-500/50 hover:shadow-2xl hover:shadow-violet-600/20 hover:z-10 relative"
             >
               <div>
                 {/* Rating Stars & Quote Icon */}

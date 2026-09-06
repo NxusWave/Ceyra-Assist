@@ -23,7 +23,7 @@ export default function FinalCTA({ onOpenDemo }: FinalCTAProps) {
 
             <p className="text-base sm:text-lg text-gray-400 max-w-2xl mx-auto leading-relaxed">
               Launch trilingual customer support in Sinhala, Tamil, and English today. Zero
-              engineering required. Free tier includes 100 resolved conversations every month.
+              engineering required. Try it free for 7 days — no credit card needed.
             </p>
 
             {/* Buttons */}
@@ -34,7 +34,7 @@ export default function FinalCTA({ onOpenDemo }: FinalCTAProps) {
                 onClick={() => onOpenDemo('free-starter')}
                 className="w-full sm:w-auto px-8 py-4 bg-white text-black font-bold rounded-xl hover:bg-gray-100 transition-all flex items-center justify-center gap-2 group active:scale-98"
               >
-                <span>Start building free</span>
+                <span>Start 7-Day Free Trial</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </button>
 

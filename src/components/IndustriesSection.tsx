@@ -71,7 +71,7 @@ export default function IndustriesSection({ onOpenDemo }: IndustriesSectionProps
         </div>
 
         {/* Active Industry Showcase Card */}
-        <div className="rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md p-6 sm:p-10 shadow-2xl">
+        <div className="rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md p-6 sm:p-10 shadow-2xl transition-all duration-300 ease-out hover:border-violet-500/50 hover:shadow-xl hover:shadow-violet-600/20 hover:scale-[1.01] relative">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             {/* Left: Summary & Key Metric */}
             <div className="lg:col-span-6 space-y-6">
@@ -105,11 +105,12 @@ export default function IndustriesSection({ onOpenDemo }: IndustriesSectionProps
               <div>
                 <button
                   type="button"
+                  id={`industry-cta-${activeCase.id}`}
                   onClick={() => onOpenDemo(activeCase.title)}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-semibold text-white bg-violet-600 hover:bg-violet-500 shadow-md transition-all"
+                  className="px-6 py-3.5 rounded-full text-sm font-semibold text-white bg-violet-600 hover:bg-violet-500 shadow-lg shadow-violet-600/25 transition-all inline-flex items-center gap-2 group active:scale-98"
                 >
                   <span>Build for {activeCase.title}</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
             </div>

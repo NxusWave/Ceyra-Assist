@@ -227,7 +227,7 @@ export default function LoginModal({ isOpen, onClose, onOpenRegister }: LoginMod
                 }}
                 className="text-violet-400 font-semibold hover:underline"
               >
-                Create one free
+                Start free trial
               </button>
             </div>
           </form>

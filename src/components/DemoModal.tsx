@@ -261,7 +261,7 @@ export default function DemoModal({
               <div className="flex items-center justify-center gap-4 text-[10px] text-gray-500 pt-2">
                 <span className="flex items-center gap-1">
                   <Shield className="w-3 h-3 text-green-400" />
-                  Free 14-day trial
+                  Free 7-day trial
                 </span>
                 <span>·</span>
                 <span>No credit card required</span>

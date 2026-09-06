@@ -321,12 +321,12 @@ export const PRICING_PLANS: PricingPlan[] = [
   {
     id: 'starter',
     name: 'Starter',
-    badge: 'Free Forever',
+    badge: '7-Day Free Trial',
     tagline: 'Ideal for testing trilingual AI on small websites and personal shops.',
-    priceLKRMonthly: 0,
-    priceLKRAnnual: 0,
-    priceUSDMonthly: 0,
-    priceUSDAnnual: 0,
+    priceLKRMonthly: 7500,
+    priceLKRAnnual: 6000,
+    priceUSDMonthly: 25,
+    priceUSDAnnual: 20,
     limits: {
       conversations: '100 / month',
       languages: 'Sinhala + Tamil + English',
@@ -339,7 +339,7 @@ export const PRICING_PLANS: PricingPlan[] = [
       'Standard website embed widget',
       'Community support',
     ],
-    ctaText: 'Start for free',
+    ctaText: 'Start 7-Day Free Trial',
   },
   {
     id: 'pro',

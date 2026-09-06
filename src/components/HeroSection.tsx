@@ -5,7 +5,6 @@ import {
   Play,
   Bot,
   Zap,
-  CheckCircle2,
   ShieldCheck,
   TrendingUp,
   MessageSquare,
@@ -131,7 +130,7 @@ export default function HeroSection({
                 onClick={onOpenDemo}
                 className="px-8 py-4 bg-white/5 border border-white/10 text-white font-bold rounded-xl hover:bg-white/10 transition-colors flex items-center justify-center gap-2 active:scale-98"
               >
-                <span>Get started free</span>
+                <span>Start 7-Day Free Trial</span>
               </button>
             </div>
 

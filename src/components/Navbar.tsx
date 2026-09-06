@@ -215,7 +215,7 @@ export default function Navbar({
                 }}
                 className="w-full py-2.5 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-500 rounded-full shadow-md flex items-center justify-center gap-2"
               >
-                <span>Get started free</span>
+                <span>Start 7-Day Free Trial</span>
               </button>
             </div>
           </div>
