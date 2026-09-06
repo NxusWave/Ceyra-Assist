@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Sparkles, Menu, X, ArrowRight, Globe, ChevronDown, CheckCircle2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Sparkles, Menu, X, ArrowRight, Globe, ChevronDown, CheckCircle2, LayoutDashboard } from 'lucide-react';
 import CeyraLogo from './CeyraLogo';
+import { supabase } from '../lib/supabaseClient';
 
 interface NavbarProps {
   onOpenDemo: (prefilledPlan?: string) => void;
@@ -18,6 +20,8 @@ export default function Navbar({
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
+  // null = still checking, true = active Supabase session, false = signed out
+  const [hasSession, setHasSession] = useState<boolean | null>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -25,6 +29,23 @@ export default function Navbar({
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Detect an existing session so a logged-in user is never shown as logged
+  // out on the landing page and can always return to the dashboard without
+  // re-authenticating.
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setHasSession(Boolean(data.session));
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setHasSession(Boolean(session));
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const navLinks = [
@@ -119,36 +140,63 @@ export default function Navbar({
               )}
             </div>
 
-            {/* Log In */}
-            <button
-              type="button"
-              id="login-header-btn"
-              onClick={onOpenLogin}
-              className="text-sm font-medium text-gray-400 hover:text-white transition-colors"
-            >
-              Log in
-            </button>
+            {hasSession === false && (
+              <>
+                {/* Log In */}
+                <button
+                  type="button"
+                  id="login-header-btn"
+                  onClick={onOpenLogin}
+                  className="text-sm font-medium text-gray-400 hover:text-white transition-colors"
+                >
+                  Log in
+                </button>
 
-            {/* Rounded Full Get Started Button */}
-            <button
-              type="button"
-              id="get-started-nav-btn"
-              onClick={() => onOpenDemo('starter')}
-              className="px-6 py-2.5 bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold rounded-full shadow-lg shadow-violet-600/25 transition-all duration-200 active:scale-95 flex items-center gap-1.5"
-            >
-              <span>Get started</span>
-            </button>
+                {/* Rounded Full Get Started Button */}
+                <button
+                  type="button"
+                  id="get-started-nav-btn"
+                  onClick={() => onOpenDemo('starter')}
+                  className="px-6 py-2.5 bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold rounded-full shadow-lg shadow-violet-600/25 transition-all duration-200 active:scale-95 flex items-center gap-1.5"
+                >
+                  <span>Get started</span>
+                </button>
+              </>
+            )}
+
+            {/* Session-aware: return to the dashboard without re-authenticating */}
+            {hasSession && (
+              <Link
+                to="/dashboard"
+                id="navbar-dashboard-btn"
+                className="px-6 py-2.5 bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold rounded-full shadow-lg shadow-violet-600/25 transition-all duration-200 active:scale-95 flex items-center gap-1.5"
+              >
+                <LayoutDashboard className="w-4 h-4" />
+                <span>Dashboard</span>
+              </Link>
+            )}
           </div>
 
           {/* Mobile menu trigger */}
           <div className="flex md:hidden items-center gap-2">
-            <button
-              type="button"
-              onClick={() => onOpenDemo('starter')}
-              className="px-4 py-2 rounded-full text-xs font-semibold text-white bg-violet-600 hover:bg-violet-500"
-            >
-              Get started
-            </button>
+            {hasSession && (
+              <Link
+                to="/dashboard"
+                className="px-4 py-2 rounded-full text-xs font-semibold text-white bg-violet-600 hover:bg-violet-500 flex items-center gap-1.5"
+              >
+                <LayoutDashboard className="w-3.5 h-3.5" />
+                <span>Dashboard</span>
+              </Link>
+            )}
+            {hasSession === false && (
+              <button
+                type="button"
+                onClick={() => onOpenDemo('starter')}
+                className="px-4 py-2 rounded-full text-xs font-semibold text-white bg-violet-600 hover:bg-violet-500"
+              >
+                Get started
+              </button>
+            )}
             <button
               type="button"
               id="mobile-menu-toggle-btn"
@@ -197,26 +245,40 @@ export default function Navbar({
             </div>
 
             <div className="pt-2 border-t border-white/10 flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  onOpenLogin();
-                }}
-                className="w-full py-2.5 text-sm font-medium text-gray-300 hover:text-white bg-white/5 rounded-full border border-white/10"
-              >
-                Log in
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  onOpenDemo();
-                }}
-                className="w-full py-2.5 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-500 rounded-full shadow-md flex items-center justify-center gap-2"
-              >
-                <span>Start 7-Day Free Trial</span>
-              </button>
+              {hasSession && (
+                <Link
+                  to="/dashboard"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full py-2.5 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-500 rounded-full shadow-md flex items-center justify-center gap-2"
+                >
+                  <LayoutDashboard className="w-4 h-4" />
+                  <span>Go to Dashboard</span>
+                </Link>
+              )}
+              {hasSession === false && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onOpenLogin();
+                    }}
+                    className="w-full py-2.5 text-sm font-medium text-gray-300 hover:text-white bg-white/5 rounded-full border border-white/10"
+                  >
+                    Log in
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onOpenDemo();
+                    }}
+                    className="w-full py-2.5 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-500 rounded-full shadow-md flex items-center justify-center gap-2"
+                  >
+                    <span>Start 7-Day Free Trial</span>
+                  </button>
+                </>
+              )}
             </div>
           </div>
         )}
