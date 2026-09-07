@@ -181,29 +181,34 @@ export default function DashboardHub() {
           }
         }
 
-        // 5. If businessId exists, fetch conversation count for this business_id
+        // 5. If businessId exists, fetch conversation count across chatbots for this business
         if (businessId) {
           setLoadingMetrics(true);
           try {
-            const { count, error: countErr } = await supabase
-              .from('conversations')
-              .select('*', { count: 'exact', head: true })
+            // Step 1: get all chatbot ids belonging to this business
+            const { data: chatbotRows } = await supabase
+              .from('chatbots')
+              .select('id')
               .eq('business_id', businessId);
 
-            if (!countErr && typeof count === 'number') {
-              if (isMounted) setConversationCount(count);
-            } else {
-              // Try select id if head query not supported
-              const { data: convData } = await supabase
+            const chatbotIds = (chatbotRows ?? []).map((c: { id: string }) => c.id);
+
+            // Step 2: count conversations across all of this business's chatbots
+            let conversationCountResult = 0;
+            if (chatbotIds.length > 0) {
+              const { count } = await supabase
                 .from('conversations')
-                .select('id')
-                .eq('business_id', businessId);
-              if (isMounted && convData) {
-                setConversationCount(convData.length);
-              }
+                .select('id', { count: 'exact', head: true })
+                .in('chatbot_id', chatbotIds);
+              conversationCountResult = count ?? 0;
+            }
+
+            if (isMounted) {
+              setConversationCount(conversationCountResult);
             }
           } catch (cErr) {
             console.warn('Notice querying conversations count:', cErr);
+            if (isMounted) setConversationCount(0);
           } finally {
             if (isMounted) setLoadingMetrics(false);
           }
