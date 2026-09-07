@@ -27,6 +27,7 @@ import {
   HelpCircle,
   Menu,
   X,
+  AlertCircle,
 } from 'lucide-react';
 import CeyraLogo from '../components/CeyraLogo';
 import BusinessAvatar from '../components/BusinessAvatar';
@@ -49,6 +50,8 @@ export default function AssistDashboard() {
   const [chatbotName, setChatbotName] = useState('Colombo Boutique Bakery Support');
   const [publicAgentName, setPublicAgentName] = useState('Ceyra Assistant');
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [chatbotId, setChatbotId] = useState<string | null>(null);
   const [primaryColor, setPrimaryColor] = useState('#8B5CF6');
   const [replyLanguage, setReplyLanguage] = useState<ReplyLanguage>('Auto-detect');
   const [tone, setTone] = useState<Tone>('Friendly');
@@ -56,6 +59,8 @@ export default function AssistDashboard() {
     'Hi! Welcome to Colombo Boutique Bakery. How can I assist you with our menu, delivery, or custom orders today?'
   );
   const [savedNotification, setSavedNotification] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Chat Simulator State
   const [chatMessages, setChatMessages] = useState<
@@ -170,6 +175,32 @@ export default function AssistDashboard() {
         } catch (pkgErr) {
           console.warn('Packages check notice:', pkgErr);
         }
+
+        // Fetch the FIRST chatbot row for this business only
+        if (businessId) {
+          try {
+            const { data } = await supabase
+              .from('chatbots')
+              .select('*')
+              .eq('business_id', businessId)
+              .order('created_at', { ascending: true })
+              .limit(1)
+              .maybeSingle();
+
+            if (data && isMounted) {
+              setChatbotId(data.id);
+              if (data.chatbot_name) setChatbotName(data.chatbot_name);
+              if (data.public_agent_name) setPublicAgentName(data.public_agent_name);
+              if (data.avatar_url) setAvatarPreview(data.avatar_url);
+              if (data.primary_color) setPrimaryColor(data.primary_color);
+              if (data.reply_language) setReplyLanguage(data.reply_language as ReplyLanguage);
+              if (data.tone) setTone(data.tone as Tone);
+              if (data.welcome_message) setWelcomeMessage(data.welcome_message);
+            }
+          } catch (botErr) {
+            console.warn('Notice querying chatbots table in AssistDashboard:', botErr);
+          }
+        }
       } catch (err) {
         console.error('Session validation error:', err);
         navigate('/', { replace: true });
@@ -192,23 +223,112 @@ export default function AssistDashboard() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages, isTyping]);
 
-  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      setAvatarFile(file);
+      setAvatarPreview(URL.createObjectURL(file));
     }
   };
 
-  const handleSaveChatbot = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSavedNotification(true);
-    setTimeout(() => {
-      setSavedNotification(false);
-    }, 3000);
+  const handleSaveChatbot = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (isSaving) return;
+
+    const business_id = business?.id;
+    if (!business_id) {
+      setSaveError('Business profile not loaded. Please reload the page.');
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveError(null);
+
+    try {
+      // a. Upload avatar file if set
+      let finalAvatarUrl: string | null = null;
+      if (avatarFile) {
+        const fileExt = avatarFile.name.split('.').pop() || 'png';
+        const path = `${business_id}/avatar-${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from('chatbot-avatars')
+          .upload(path, avatarFile, {
+            cacheControl: '3600',
+            upsert: true,
+          });
+
+        if (uploadError) {
+          throw new Error(`Failed to upload avatar: ${uploadError.message}`);
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from('chatbot-avatars')
+          .getPublicUrl(path);
+
+        finalAvatarUrl = publicUrlData?.publicUrl || null;
+        setAvatarPreview(finalAvatarUrl);
+        setAvatarFile(null);
+      } else if (avatarPreview && !avatarPreview.startsWith('blob:')) {
+        finalAvatarUrl = avatarPreview;
+      } else {
+        finalAvatarUrl = null;
+      }
+
+      // b. Update or insert chatbot row
+      if (chatbotId) {
+        const { error: updateError } = await supabase
+          .from('chatbots')
+          .update({
+            chatbot_name: chatbotName,
+            public_agent_name: publicAgentName,
+            avatar_url: finalAvatarUrl,
+            primary_color: primaryColor,
+            reply_language: replyLanguage,
+            tone: tone,
+            welcome_message: welcomeMessage,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', chatbotId);
+
+        if (updateError) {
+          throw updateError;
+        }
+      } else {
+        const { data, error: insertError } = await supabase
+          .from('chatbots')
+          .insert({
+            business_id: business_id,
+            chatbot_name: chatbotName,
+            public_agent_name: publicAgentName,
+            avatar_url: finalAvatarUrl,
+            primary_color: primaryColor,
+            reply_language: replyLanguage,
+            tone: tone,
+            welcome_message: welcomeMessage,
+          })
+          .select()
+          .single();
+
+        if (insertError) {
+          throw insertError;
+        }
+
+        if (data) {
+          setChatbotId(data.id);
+        }
+      }
+
+      // c. On success, show notification
+      setSavedNotification(true);
+      setTimeout(() => {
+        setSavedNotification(false);
+      }, 3000);
+    } catch (err: any) {
+      console.error('Error saving chatbot:', err);
+      setSaveError(err.message || 'Failed to save chatbot configuration. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleSendMessage = (e: React.FormEvent) => {
@@ -486,13 +606,25 @@ export default function AssistDashboard() {
             </Link>
             <button
               onClick={handleSaveChatbot}
-              className="px-5 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-xs font-semibold text-white shadow-lg shadow-violet-600/25 transition-all flex items-center gap-2"
+              disabled={isSaving}
+              className="px-5 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-semibold text-white shadow-lg shadow-violet-600/25 transition-all flex items-center gap-2"
             >
-              <Check className="w-4 h-4" />
-              <span>Save Changes</span>
+              {isSaving ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Check className="w-4 h-4" />
+              )}
+              <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>
             </button>
           </div>
         </div>
+
+        {saveError && (
+          <div className="mt-4 p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center gap-2.5 text-xs text-rose-300 animate-in fade-in">
+            <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0" />
+            <span>{saveError}</span>
+          </div>
+        )}
 
         {savedNotification && (
           <div className="mt-4 p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center gap-2.5 text-xs text-emerald-300 animate-in fade-in">
@@ -558,7 +690,7 @@ export default function AssistDashboard() {
                       <input
                         type="file"
                         ref={fileInputRef}
-                        onChange={handleAvatarUpload}
+                        onChange={handleAvatarChange}
                         accept="image/*"
                         className="hidden"
                       />
@@ -573,7 +705,13 @@ export default function AssistDashboard() {
                       {avatarPreview && (
                         <button
                           type="button"
-                          onClick={() => setAvatarPreview(null)}
+                          onClick={() => {
+                            setAvatarPreview(null);
+                            setAvatarFile(null);
+                            if (fileInputRef.current) {
+                              fileInputRef.current.value = '';
+                            }
+                          }}
                           className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-colors"
                           title="Remove Avatar"
                         >
@@ -732,10 +870,15 @@ export default function AssistDashboard() {
               <div className="flex items-center justify-end gap-3 pt-2">
                 <button
                   type="submit"
-                  className="px-6 py-3 rounded-2xl bg-violet-600 hover:bg-violet-500 text-xs font-bold text-white shadow-xl shadow-violet-600/25 transition-all flex items-center gap-2"
+                  disabled={isSaving}
+                  className="px-6 py-3 rounded-2xl bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-bold text-white shadow-xl shadow-violet-600/25 transition-all flex items-center gap-2"
                 >
-                  <Check className="w-4 h-4" />
-                  <span>Save and Publish Chatbot</span>
+                  {isSaving ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Check className="w-4 h-4" />
+                  )}
+                  <span>{isSaving ? 'Saving...' : 'Save and Publish Chatbot'}</span>
                 </button>
               </div>
             </form>
