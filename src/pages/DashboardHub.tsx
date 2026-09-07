@@ -346,7 +346,7 @@ export default function DashboardHub() {
             >
               <BusinessAvatar
                 name={businessDisplayName}
-                avatarUrl={business?.avatar_url || business?.logo_url}
+                avatarUrl={business?.logo_url}
                 size="xs"
               />
               <span className="text-gray-200 font-medium max-w-[150px] truncate">

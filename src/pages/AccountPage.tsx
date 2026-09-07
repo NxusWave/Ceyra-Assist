@@ -40,6 +40,8 @@ export default function AccountPage() {
   const [contactEmail, setContactEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoRemoved, setLogoRemoved] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState<string | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
@@ -133,7 +135,7 @@ export default function AccountPage() {
               currentUser.user_metadata?.phone ||
               ''
           );
-          setAvatarPreview(currentBiz?.avatar_url || currentBiz?.logo_url || null);
+          setAvatarPreview(currentBiz?.logo_url || null);
         }
       } catch (err) {
         console.error('Account load error:', err);
@@ -150,20 +152,18 @@ export default function AccountPage() {
     };
   }, [navigate]);
 
-  // Avatar file upload handler (consistent with Chatbot Builder)
+  // Logo file upload handler
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     setProfileError(null);
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
-        setProfileError('Avatar image must be under 2MB.');
+        setProfileError('Logo image must be under 2MB.');
         return;
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      setLogoFile(file);
+      setAvatarPreview(URL.createObjectURL(file));
+      setLogoRemoved(false);
     }
   };
 
@@ -183,17 +183,49 @@ export default function AccountPage() {
     }
 
     try {
-      // 1. Update businesses table row for current user
-      const fullPayload: Record<string, any> = {
+      let finalLogoUrl: string | null | undefined = undefined;
+
+      // 1. If a new logo file was selected, upload it to Supabase Storage first
+      if (logoFile) {
+        const business_id = business?.id || user.id;
+        const fileExt = logoFile.name.split('.').pop() || 'png';
+        const path = `business-logos/${business_id}/logo-${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from('chatbot-avatars')
+          .upload(path, logoFile, {
+            cacheControl: '3600',
+            upsert: true,
+          });
+
+        if (uploadError) {
+          throw new Error(`Failed to upload logo: ${uploadError.message}`);
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from('chatbot-avatars')
+          .getPublicUrl(path);
+
+        finalLogoUrl = publicUrlData?.publicUrl || null;
+      } else if (logoRemoved) {
+        finalLogoUrl = null;
+      }
+
+      // 2. Update businesses table row with logo_url (not avatar_url)
+      const updatePayload: Record<string, any> = {
         name: trimmedName,
         contact_email: contactEmail.trim(),
         phone: phoneNumber.trim(),
-        avatar_url: avatarPreview,
       };
+
+      // Only include logo_url if a new logo was uploaded (or explicitly removed),
+      // otherwise omit this field so the existing saved value isn't overwritten
+      if (finalLogoUrl !== undefined) {
+        updatePayload.logo_url = finalLogoUrl;
+      }
 
       let { error: updateError } = await supabase
         .from('businesses')
-        .update(fullPayload)
+        .update(updatePayload)
         .eq('owner_id', user.id);
 
       // Graceful column fallback if schema has fewer columns
@@ -201,6 +233,9 @@ export default function AccountPage() {
         const fallbackPayload: Record<string, any> = {
           name: trimmedName,
         };
+        if (finalLogoUrl !== undefined) {
+          fallbackPayload.logo_url = finalLogoUrl;
+        }
         const fallbackRes = await supabase
           .from('businesses')
           .update(fallbackPayload)
@@ -212,7 +247,7 @@ export default function AccountPage() {
         throw updateError;
       }
 
-      // 2. Also keep user_metadata in sync so auth session reflects new business name
+      // 3. Also keep user_metadata in sync so auth session reflects new business name
       await supabase.auth.updateUser({
         data: {
           company: trimmedName,
@@ -226,8 +261,14 @@ export default function AccountPage() {
         name: trimmedName,
         contact_email: contactEmail.trim(),
         phone: phoneNumber.trim(),
-        avatar_url: avatarPreview,
+        ...(finalLogoUrl !== undefined ? { logo_url: finalLogoUrl } : {}),
       }));
+
+      if (finalLogoUrl !== undefined) {
+        setAvatarPreview(finalLogoUrl);
+      }
+      setLogoFile(null);
+      setLogoRemoved(false);
 
       setProfileSuccess('Business profile details saved successfully.');
       setTimeout(() => setProfileSuccess(null), 4000);
@@ -359,7 +400,7 @@ export default function AccountPage() {
             >
               <BusinessAvatar
                 name={currentDisplayName}
-                avatarUrl={avatarPreview || business?.avatar_url || business?.logo_url}
+                avatarUrl={avatarPreview || business?.logo_url}
                 size="xs"
               />
               <span className="text-gray-200 font-medium max-w-[150px] truncate">
@@ -410,7 +451,7 @@ export default function AccountPage() {
             <div className="p-5 rounded-3xl glass-panel border border-white/10 shadow-xl flex items-center gap-4">
               <BusinessAvatar
                 name={currentDisplayName}
-                avatarUrl={avatarPreview || business?.avatar_url || business?.logo_url}
+                avatarUrl={avatarPreview || business?.logo_url}
                 size="xl"
               />
               <div className="min-w-0 flex-1">
@@ -560,7 +601,14 @@ export default function AccountPage() {
                           {avatarPreview && (
                             <button
                               type="button"
-                              onClick={() => setAvatarPreview(null)}
+                              onClick={() => {
+                                setAvatarPreview(null);
+                                setLogoFile(null);
+                                setLogoRemoved(true);
+                                if (fileInputRef.current) {
+                                  fileInputRef.current.value = '';
+                                }
+                              }}
                               className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition-colors"
                               title="Remove Logo"
                             >

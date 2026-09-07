@@ -544,7 +544,7 @@ export default function AssistDashboard() {
             >
               <BusinessAvatar
                 name={businessDisplayName}
-                avatarUrl={business?.avatar_url || business?.logo_url}
+                avatarUrl={business?.logo_url}
                 size="md"
               />
               <div className="flex-1 min-w-0">

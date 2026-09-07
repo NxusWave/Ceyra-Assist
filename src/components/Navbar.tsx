@@ -57,7 +57,7 @@ export default function Navbar({
         if (bizRows && bizRows.length > 0) {
           const biz = bizRows[0];
           bName = biz.name || biz.business_name || bName;
-          bAvatar = biz.avatar_url || biz.logo_url || null;
+          bAvatar = biz.logo_url || null;
         }
       } catch (err) {
         console.warn('Notice loading business in navbar:', err);
