@@ -9,7 +9,7 @@ import {
   MessageSquare,
   CheckCircle2,
   Clock,
-  ExternalLink,
+  Home,
   ShieldCheck,
   Zap,
   Globe,
@@ -316,8 +316,8 @@ export default function DashboardHub() {
                 to="/"
                 className="px-3 py-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.03] transition-colors flex items-center gap-1"
               >
-                <span>Landing Page</span>
-                <ExternalLink className="w-3 h-3 text-gray-500" />
+                <span>Back to Home</span>
+                <Home className="w-3 h-3 text-gray-500" />
               </Link>
             </nav>
           </div>

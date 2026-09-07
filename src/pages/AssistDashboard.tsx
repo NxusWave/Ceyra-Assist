@@ -9,7 +9,7 @@ import {
   Share2,
   CreditCard,
   Settings,
-  ExternalLink,
+  Home,
   MessageSquare,
   Globe,
   Sliders,
@@ -411,8 +411,8 @@ export default function AssistDashboard() {
             to="/"
             className="flex items-center justify-between text-xs text-gray-400 hover:text-gray-200 px-3 py-2 rounded-lg hover:bg-white/[0.04] transition-colors"
           >
-            <span>Landing Page</span>
-            <ExternalLink className="w-3.5 h-3.5" />
+            <span>Back to Home</span>
+            <Home className="w-3.5 h-3.5" />
           </Link>
 
           <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-2">
