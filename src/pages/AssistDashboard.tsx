@@ -3,13 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Bot,
-  BarChart3,
-  BookOpen,
-  Inbox,
-  Share2,
-  CreditCard,
-  Settings,
-  Home,
   MessageSquare,
   Globe,
   Sliders,
@@ -21,16 +14,12 @@ import {
   Upload,
   Send,
   Trash2,
-  LogOut,
   Palette,
   Check,
   HelpCircle,
-  Menu,
-  X,
   AlertCircle,
 } from 'lucide-react';
 import CeyraLogo from '../components/CeyraLogo';
-import BusinessAvatar from '../components/BusinessAvatar';
 import { supabase } from '../lib/supabaseClient';
 import { SIGNUP_PRODUCT } from '../components/DemoModal';
 
@@ -44,7 +33,6 @@ export default function AssistDashboard() {
   const [authChecking, setAuthChecking] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [business, setBusiness] = useState<any>(null);
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   // Chatbot Builder Form State
   const [chatbotName, setChatbotName] = useState('Colombo Boutique Bakery Support');
@@ -390,16 +378,6 @@ export default function AssistDashboard() {
     }, 700);
   };
 
-  const handleSignOut = async () => {
-    try {
-      await supabase.auth.signOut();
-    } catch (err) {
-      console.error('Error signing out:', err);
-    } finally {
-      navigate('/', { replace: true });
-    }
-  };
-
   const colorPresets = [
     { label: 'Violet', value: '#8B5CF6' },
     { label: 'Indigo', value: '#6366F1' },
@@ -407,17 +385,6 @@ export default function AssistDashboard() {
     { label: 'Rose', value: '#F43F5E' },
     { label: 'Amber', value: '#F59E0B' },
     { label: 'Sky', value: '#0EA5E9' },
-  ];
-
-  const navItems = [
-    { name: 'Dashboard Hub', icon: LayoutDashboard, href: '/dashboard', active: false },
-    { name: 'Chatbots', icon: Bot, href: '/dashboard/assist', active: true },
-    { name: 'Analytics', icon: BarChart3, href: '#', active: false },
-    { name: 'Channels', icon: Share2, href: '#', active: false },
-    { name: 'Knowledge Base', icon: BookOpen, href: '#', active: false },
-    { name: 'Inbox', icon: Inbox, href: '#', active: false },
-    { name: 'Billing', icon: CreditCard, href: '#', active: false },
-    { name: 'Settings', icon: Settings, href: '#', active: false },
   ];
 
   if (authChecking) {
@@ -440,135 +407,11 @@ export default function AssistDashboard() {
 
   const businessDisplayName =
     business?.name || user?.user_metadata?.company || 'Colombo Bakery';
-  const userInitials = (businessDisplayName || 'CB')
-    .split(' ')
-    .filter(Boolean)
-    .map((w: string) => w[0])
-    .join('')
-    .substring(0, 2)
-    .toUpperCase();
 
   return (
-    <div className="min-h-screen bg-[#0A0A0B] text-gray-100 flex flex-col lg:flex-row font-sans selection:bg-violet-600 selection:text-white isolate">
-      {/* Ambient background glow */}
-      <div className="fixed inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.08),rgba(255,255,255,0))] pointer-events-none -z-10" />
+    <main className="flex-1 w-full max-w-7xl mx-auto p-6 sm:p-8 lg:p-10">
 
-      {/* Mobile Top Header */}
-      <div className="lg:hidden flex items-center justify-between px-6 py-4 border-b border-white/10 bg-[#0E0E12] sticky top-0 z-40">
-        <div className="flex items-center gap-2.5">
-          <CeyraLogo className="w-7 h-7" />
-          <span className="font-bold text-white text-base">Ceyra Assist</span>
-        </div>
-        <button
-          onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
-          className="p-2 rounded-lg bg-white/5 border border-white/10 text-gray-300 hover:text-white"
-        >
-          {mobileSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
-      </div>
-
-      {/* Sidebar */}
-      <aside
-        className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-[#0E0E12] border-r border-white/10 flex flex-col justify-between p-5 transition-transform duration-300 ease-in-out ${
-          mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        }`}
-      >
-        <div className="space-y-6">
-          <div className="flex items-center justify-between pb-3 border-b border-white/5">
-            <Link to="/dashboard" className="flex items-center gap-2.5 group">
-              <CeyraLogo className="w-8 h-8 group-hover:scale-105 transition-transform" />
-              <div>
-                <span className="text-base font-bold tracking-tight text-white block">
-                  CEYRA
-                </span>
-                <span className="text-[10px] uppercase font-semibold tracking-wider text-violet-400 block">
-                  Assist Console
-                </span>
-              </div>
-            </Link>
-            <button
-              onClick={() => setMobileSidebarOpen(false)}
-              className="lg:hidden p-1 text-gray-400 hover:text-white"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-
-          <nav className="space-y-1">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  onClick={() => setMobileSidebarOpen(false)}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-colors ${
-                    item.active
-                      ? 'bg-violet-600/15 text-violet-300 border border-violet-500/20 shadow-sm'
-                      : 'text-gray-400 hover:text-gray-200 hover:bg-white/[0.04]'
-                  }`}
-                >
-                  <Icon className={`w-4 h-4 ${item.active ? 'text-violet-400' : 'text-gray-500'}`} />
-                  <span>{item.name}</span>
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-
-        <div className="pt-4 border-t border-white/10 space-y-3">
-          <Link
-            to="/dashboard"
-            className="flex items-center justify-between text-xs text-violet-400 hover:text-violet-300 px-3 py-2 rounded-lg bg-violet-600/10 border border-violet-500/20 transition-colors"
-          >
-            <span className="flex items-center gap-2">
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back to Hub</span>
-            </span>
-            <LayoutDashboard className="w-3.5 h-3.5" />
-          </Link>
-
-          <Link
-            to="/"
-            className="flex items-center justify-between text-xs text-gray-400 hover:text-gray-200 px-3 py-2 rounded-lg hover:bg-white/[0.04] transition-colors"
-          >
-            <span>Back to Home</span>
-            <Home className="w-3.5 h-3.5" />
-          </Link>
-
-          <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-2">
-            <Link
-              to="/dashboard/account"
-              className="flex items-center gap-2.5 group/account hover:opacity-90 transition-opacity"
-              title="Manage Account"
-            >
-              <BusinessAvatar
-                name={businessDisplayName}
-                avatarUrl={business?.logo_url}
-                size="md"
-              />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-white group-hover/account:text-violet-300 transition-colors truncate">
-                  {businessDisplayName}
-                </p>
-                <p className="text-[11px] text-gray-400 truncate">{user?.email || 'Pro Workspace'}</p>
-              </div>
-            </Link>
-
-            <button
-              onClick={handleSignOut}
-              className="w-full mt-2 pt-2 border-t border-white/5 flex items-center justify-center gap-1.5 text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 py-1.5 rounded-lg transition-colors"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>Sign Out</span>
-            </button>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main Content Area */}
-      <main className="flex-1 p-6 sm:p-8 lg:p-10 max-w-7xl overflow-y-auto">
-        {/* Breadcrumb: Back to Dashboard */}
+      {/* Breadcrumb: Back to Dashboard */}
         <div className="mb-4">
           <Link
             to="/dashboard"
@@ -1031,7 +874,6 @@ export default function AssistDashboard() {
             </div>
           </div>
         </div>
-      </main>
-    </div>
+    </main>
   );
 }
