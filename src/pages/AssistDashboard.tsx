@@ -29,6 +29,7 @@ import {
   X,
 } from 'lucide-react';
 import CeyraLogo from '../components/CeyraLogo';
+import BusinessAvatar from '../components/BusinessAvatar';
 import { supabase } from '../lib/supabaseClient';
 import { SIGNUP_PRODUCT } from '../components/DemoModal';
 
@@ -416,15 +417,23 @@ export default function AssistDashboard() {
           </Link>
 
           <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-2">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center text-xs font-bold text-white shadow-inner flex-shrink-0">
-                {userInitials}
-              </div>
+            <Link
+              to="/dashboard/account"
+              className="flex items-center gap-2.5 group/account hover:opacity-90 transition-opacity"
+              title="Manage Account"
+            >
+              <BusinessAvatar
+                name={businessDisplayName}
+                avatarUrl={business?.avatar_url || business?.logo_url}
+                size="md"
+              />
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-white truncate">{businessDisplayName}</p>
+                <p className="text-xs font-medium text-white group-hover/account:text-violet-300 transition-colors truncate">
+                  {businessDisplayName}
+                </p>
                 <p className="text-[11px] text-gray-400 truncate">{user?.email || 'Pro Workspace'}</p>
               </div>
-            </div>
+            </Link>
 
             <button
               onClick={handleSignOut}

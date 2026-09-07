@@ -17,8 +17,10 @@ import {
   LayoutGrid,
   ChevronRight,
   Plus,
+  User,
 } from 'lucide-react';
 import CeyraLogo from '../components/CeyraLogo';
+import BusinessAvatar from '../components/BusinessAvatar';
 import { supabase } from '../lib/supabaseClient';
 import { SIGNUP_PRODUCT } from '../components/DemoModal';
 
@@ -313,6 +315,13 @@ export default function DashboardHub() {
                 <span>My Products</span>
               </span>
               <Link
+                to="/dashboard/account"
+                className="px-3 py-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.03] transition-colors flex items-center gap-1.5"
+              >
+                <User className="w-3.5 h-3.5 text-gray-500" />
+                <span>Account</span>
+              </Link>
+              <Link
                 to="/"
                 className="px-3 py-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.03] transition-colors flex items-center gap-1"
               >
@@ -323,15 +332,22 @@ export default function DashboardHub() {
           </div>
 
           <div className="flex items-center gap-4">
-            {/* Business Badge */}
-            <div className="hidden sm:flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/10 text-xs">
-              <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center text-[10px] font-bold text-white">
-                {userInitials}
-              </div>
+            {/* Standardized Round Business Badge */}
+            <Link
+              to="/dashboard/account"
+              id="dashboard-business-badge"
+              className="hidden sm:flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-white/[0.03] hover:bg-white/[0.08] border border-white/10 text-xs transition-colors"
+              title="Manage Account"
+            >
+              <BusinessAvatar
+                name={businessDisplayName}
+                avatarUrl={business?.avatar_url || business?.logo_url}
+                size="xs"
+              />
               <span className="text-gray-200 font-medium max-w-[150px] truncate">
                 {businessDisplayName}
               </span>
-            </div>
+            </Link>
 
             <button
               onClick={handleSignOut}

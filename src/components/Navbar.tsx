@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Sparkles, Menu, X, ArrowRight, Globe, ChevronDown, CheckCircle2, LayoutDashboard, User, LogOut } from 'lucide-react';
 import CeyraLogo from './CeyraLogo';
+import BusinessAvatar from './BusinessAvatar';
 import { supabase } from '../lib/supabaseClient';
 import type { Session } from '@supabase/supabase-js';
 
@@ -23,9 +24,10 @@ export default function Navbar({
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
   // null = still checking, true = active Supabase session, false = signed out
   const [hasSession, setHasSession] = useState<boolean | null>(null);
-  // Signed-in user identity for the avatar dropdown
+  // Signed-in business identity for the avatar dropdown
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [userName, setUserName] = useState('');
+  const [businessName, setBusinessName] = useState('');
+  const [businessAvatarUrl, setBusinessAvatarUrl] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState('');
   const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -37,17 +39,36 @@ export default function Navbar({
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const applyUser = (session: Session | null) => {
+  const applyUser = async (session: Session | null) => {
     if (session?.user) {
       const meta = (session.user.user_metadata || {}) as Record<string, string>;
       const email = session.user.email || '';
       setUserEmail(email);
-      setUserName(
-        meta.full_name || meta.name || meta.company || email.split('@')[0] || 'My Account'
-      );
+
+      let bName = meta.company || meta.business_name || 'My Business';
+      let bAvatar: string | null = null;
+
+      try {
+        const { data: bizRows } = await supabase
+          .from('businesses')
+          .select('*')
+          .eq('owner_id', session.user.id);
+
+        if (bizRows && bizRows.length > 0) {
+          const biz = bizRows[0];
+          bName = biz.name || biz.business_name || bName;
+          bAvatar = biz.avatar_url || biz.logo_url || null;
+        }
+      } catch (err) {
+        console.warn('Notice loading business in navbar:', err);
+      }
+
+      setBusinessName(bName);
+      setBusinessAvatarUrl(bAvatar);
     } else {
       setUserEmail('');
-      setUserName('');
+      setBusinessName('');
+      setBusinessAvatarUrl(null);
     }
   };
 
@@ -82,14 +103,6 @@ export default function Navbar({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [userMenuOpen]);
-
-  const userInitials = (userName || 'U')
-    .split(' ')
-    .filter(Boolean)
-    .map((w) => w[0])
-    .join('')
-    .substring(0, 2)
-    .toUpperCase();
 
   const handleLogout = async () => {
     setUserMenuOpen(false);
@@ -216,7 +229,7 @@ export default function Navbar({
               </>
             )}
 
-            {/* Session-aware: user avatar + name dropdown with account actions */}
+            {/* Session-aware: business avatar + name dropdown with account actions */}
             {hasSession && (
               <div className="relative" ref={userMenuRef}>
                 <button
@@ -225,13 +238,15 @@ export default function Navbar({
                   onClick={() => setUserMenuOpen((open) => !open)}
                   aria-haspopup="menu"
                   aria-expanded={userMenuOpen}
-                  className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-colors"
+                  className="flex items-center gap-2 pl-1.5 pr-3 py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-colors"
                 >
-                  <span className="w-7 h-7 rounded-full bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center text-[10px] font-bold text-white shadow-inner flex-shrink-0">
-                    {userInitials}
-                  </span>
+                  <BusinessAvatar
+                    name={businessName}
+                    avatarUrl={businessAvatarUrl}
+                    size="sm"
+                  />
                   <span className="text-sm font-medium text-gray-200 max-w-[140px] truncate">
-                    {userName}
+                    {businessName}
                   </span>
                   <ChevronDown
                     className={`w-3.5 h-3.5 text-gray-400 transition-transform ${
@@ -249,11 +264,13 @@ export default function Navbar({
                     {/* Identity header */}
                     <div className="px-3.5 pt-3 pb-2.5 border-b border-white/5">
                       <div className="flex items-center gap-2.5">
-                        <span className="w-9 h-9 rounded-full bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
-                          {userInitials}
-                        </span>
+                        <BusinessAvatar
+                          name={businessName}
+                          avatarUrl={businessAvatarUrl}
+                          size="lg"
+                        />
                         <div className="min-w-0">
-                          <p className="text-xs font-semibold text-white truncate">{userName}</p>
+                          <p className="text-xs font-semibold text-white truncate">{businessName}</p>
                           <p className="text-[10px] text-gray-400 truncate">{userEmail}</p>
                         </div>
                       </div>
@@ -262,7 +279,7 @@ export default function Navbar({
                     {/* Menu items */}
                     <div className="py-1.5" role="none">
                       <Link
-                        to="/dashboard"
+                        to="/dashboard/account"
                         onClick={() => setUserMenuOpen(false)}
                         role="menuitem"
                         className="flex items-center gap-2.5 px-3.5 py-2 text-xs text-gray-200 hover:bg-violet-600/20 hover:text-violet-300 transition-colors"
@@ -368,16 +385,26 @@ export default function Navbar({
             <div className="pt-2 border-t border-white/10 flex flex-col gap-2">
               {hasSession && (
                 <>
-                  {/* Signed-in identity */}
+                  {/* Signed-in business identity */}
                   <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-white/5 border border-white/10">
-                    <span className="w-8 h-8 rounded-full bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center text-[10px] font-bold text-white shadow-inner flex-shrink-0">
-                      {userInitials}
-                    </span>
+                    <BusinessAvatar
+                      name={businessName}
+                      avatarUrl={businessAvatarUrl}
+                      size="md"
+                    />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-white truncate">{userName}</p>
+                      <p className="text-xs font-semibold text-white truncate">{businessName}</p>
                       <p className="text-[10px] text-gray-400 truncate">{userEmail}</p>
                     </div>
                   </div>
+                  <Link
+                    to="/dashboard/account"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="w-full py-2.5 text-sm font-semibold text-gray-200 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-full flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <User className="w-4 h-4 text-violet-400" />
+                    <span>My Account</span>
+                  </Link>
                   <Link
                     to="/dashboard"
                     onClick={() => setMobileMenuOpen(false)}

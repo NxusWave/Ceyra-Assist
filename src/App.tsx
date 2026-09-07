@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
 import DashboardHub from './pages/DashboardHub';
 import AssistDashboard from './pages/AssistDashboard';
+import AccountPage from './pages/AccountPage';
 import AuthSessionManager from './components/AuthSessionManager';
 
 export default function App() {
@@ -14,6 +15,7 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/dashboard" element={<DashboardHub />} />
         <Route path="/dashboard/assist" element={<AssistDashboard />} />
+        <Route path="/dashboard/account" element={<AccountPage />} />
       </Routes>
     </>
   );
