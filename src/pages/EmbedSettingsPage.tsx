@@ -202,7 +202,7 @@ export default function EmbedSettingsPage() {
     }
   };
 
-  const embedSnippet = `<script src="https://assist.ceyra.ai/widget.js" data-chatbot-id="${chatbotId || '{chatbot_id}'}" async></script>`;
+  const embedSnippet = `<script src="https://ceyra-assist.vercel.app/widget.js" data-chatbot-id="${chatbotId || '{chatbot_id}'}" async></script>`;
 
   const handleCopySnippet = async () => {
     try {
