@@ -6,7 +6,7 @@
     return;
   }
 
-  var API_BASE = 'https://assist.ceyra.ai';
+  var API_BASE = 'https://ceyra-assist.vercel.app';
   var storageKeyVisitor = 'ceyra_visitor_' + chatbotId;
   var storageKeyConvo = 'ceyra_convo_' + chatbotId;
 
