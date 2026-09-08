@@ -218,7 +218,7 @@ export default function HeroSection({
                           </span>
                           <span>·</span>
                           <span className="text-violet-400 font-medium">
-                            {submittedQuery ? 'Colombo Boutique Bakery Demo' : demoData.intent}
+                            {submittedQuery ? 'Live AI Response' : demoData.intent}
                           </span>
                         </div>
                       </>

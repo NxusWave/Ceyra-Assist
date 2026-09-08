@@ -53,14 +53,7 @@ export default function AssistDashboard() {
   // Chat Simulator State
   const [chatMessages, setChatMessages] = useState<
     Array<{ sender: 'user' | 'bot'; text: string; time: string; lang?: string }>
-  >([
-    {
-      sender: 'bot',
-      text: 'Ayubowan! 🙏 Welcome to Colombo Boutique Bakery. How can I help you today?',
-      time: 'Just now',
-      lang: 'Sinhala / English',
-    },
-  ]);
+  >([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
 
@@ -208,7 +201,11 @@ export default function AssistDashboard() {
   }, [navigate]);
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    chatEndRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'nearest',
+      inline: 'nearest',
+    });
   }, [chatMessages, isTyping]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -319,63 +316,59 @@ export default function AssistDashboard() {
     }
   };
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputMessage.trim()) return;
 
     const userText = inputMessage.trim();
-    const newMsg = {
-      sender: 'user' as const,
-      text: userText,
-      time: 'Just now',
-    };
-
-    setChatMessages((prev) => [...prev, newMsg]);
+    setChatMessages((prev) => [
+      ...prev,
+      { sender: 'user', text: userText, time: 'Just now' },
+    ]);
     setInputMessage('');
     setIsTyping(true);
 
-    setTimeout(() => {
-      let botReply = '';
-      const lower = userText.toLowerCase();
+    try {
+      const response = await fetch('/api/hero-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: userText,
+          businessName: businessDisplayName,
+          chatbotName: publicAgentName,
+          tone: tone,
+          replyLanguage: replyLanguage,
+        }),
+      });
 
-      if (
-        lower.includes('sinhala') ||
-        lower.includes('සිංහල') ||
-        lower.includes('මිල') ||
-        lower.includes('කොළඹ') ||
-        lower.includes('කේක්') ||
-        lower.includes('බෙදාහැරීම්') ||
-        replyLanguage === 'Sinhala'
-      ) {
-        botReply =
-          'අපගේ බේකරිය සෑම දිනකම නැවුම් කේක්, පේස්ට්‍රි සහ පාන් පිළියෙල කරනු ලබයි. කොළඹ අවට පැය 2ක් ඇතුළත ඩිලිවරි පහසුකම් ඇත!';
-      } else if (
-        lower.includes('tamil') ||
-        lower.includes('தமிழ்') ||
-        lower.includes('விலை') ||
-        lower.includes('கேக்') ||
-        replyLanguage === 'Tamil'
-      ) {
-        botReply =
-          'வணக்கம்! எங்களின் புதிய கேக் மற்றும் பேக்கரி உணவு வகைகளுக்கு கொழும்பு பகுதியில் உடனடி டெலிவரி வசதி உண்டு.';
-      } else if (lower.includes('menu') || lower.includes('order') || lower.includes('cake')) {
-        botReply =
-          'We bake artisan sourdough, French croissants, and custom celebration cakes! Would you like me to send our latest catalog or take your order details?';
-      } else {
-        botReply = `Thank you for contacting ${chatbotName}! I'm operating in ${tone.toLowerCase()} mode. How else can I assist you with your order?`;
+      if (!response.ok) {
+        throw new Error('Chat request failed');
       }
+
+      const data = await response.json();
 
       setChatMessages((prev) => [
         ...prev,
         {
-          sender: 'bot' as const,
-          text: botReply,
+          sender: 'bot',
+          text: data.reply || "Sorry, I could not generate a response.",
           time: 'Just now',
           lang: 'Auto Trilingual',
         },
       ]);
+    } catch (err) {
+      console.error('Chat simulator error:', err);
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          sender: 'bot',
+          text: "Sorry, I'm having trouble responding right now. Please try again.",
+          time: 'Just now',
+        },
+      ]);
+    } finally {
       setIsTyping(false);
-    }, 700);
+    }
   };
 
   const colorPresets = [
