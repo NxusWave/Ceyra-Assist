@@ -1,16 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard,
   Bot,
   MessageSquare,
   Globe,
-  Sliders,
   Loader2,
   CheckCircle2,
   Clock,
   Sparkles,
-  ArrowLeft,
   Upload,
   Send,
   Trash2,
@@ -18,29 +14,21 @@ import {
   Check,
   HelpCircle,
   AlertCircle,
-  Code2,
 } from 'lucide-react';
-import CeyraLogo from '../components/CeyraLogo';
 import { supabase } from '../lib/supabaseClient';
-import { SIGNUP_PRODUCT } from '../components/DemoModal';
+import { useAssistContext } from '../contexts/AssistContext';
 
 type ReplyLanguage = 'Auto-detect' | 'Sinhala' | 'Tamil' | 'English';
 type Tone = 'Friendly' | 'Formal' | 'Casual';
 
 export default function AssistDashboard() {
-  const navigate = useNavigate();
-
-  // Auth & Business State
-  const [authChecking, setAuthChecking] = useState(true);
-  const [user, setUser] = useState<any>(null);
-  const [business, setBusiness] = useState<any>(null);
+  const { user, business, chatbotId, setChatbotId } = useAssistContext();
 
   // Chatbot Builder Form State
   const [chatbotName, setChatbotName] = useState('Colombo Boutique Bakery Support');
   const [publicAgentName, setPublicAgentName] = useState('Ceyra Assistant');
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [chatbotId, setChatbotId] = useState<string | null>(null);
   const [primaryColor, setPrimaryColor] = useState('#8B5CF6');
   const [replyLanguage, setReplyLanguage] = useState<ReplyLanguage>('Auto-detect');
   const [tone, setTone] = useState<Tone>('Friendly');
@@ -62,144 +50,40 @@ export default function AssistDashboard() {
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (business?.name && !chatbotId) {
+      setChatbotName(`${business.name} Support`);
+    }
+  }, [business?.name, chatbotId]);
+
+  useEffect(() => {
+    if (!chatbotId) return;
     let isMounted = true;
-
-    async function checkAuthAndBusiness() {
+    async function loadChatbotConfig() {
       try {
-        const {
-          data: { session },
-          error: sessionError,
-        } = await supabase.auth.getSession();
-
-        if (sessionError || !session || !session.user) {
-          navigate('/', { replace: true });
-          return;
-        }
-
-        const currentUser = session.user;
-        if (isMounted) {
-          setUser(currentUser);
-        }
-
-        // Check the "businesses" table for a row where owner_id equals the logged-in user's id
-        let currentBusiness: any = null;
-        const { data: existingBusinesses, error: fetchError } = await supabase
-          .from('businesses')
+        const { data } = await supabase
+          .from('chatbots')
           .select('*')
-          .eq('owner_id', currentUser.id);
+          .eq('id', chatbotId)
+          .maybeSingle();
 
-        if (fetchError) {
-          console.warn('Notice querying businesses table:', fetchError.message);
+        if (data && isMounted) {
+          if (data.chatbot_name) setChatbotName(data.chatbot_name);
+          if (data.public_agent_name) setPublicAgentName(data.public_agent_name);
+          if (data.avatar_url) setAvatarPreview(data.avatar_url);
+          if (data.primary_color) setPrimaryColor(data.primary_color);
+          if (data.reply_language) setReplyLanguage(data.reply_language as ReplyLanguage);
+          if (data.tone) setTone(data.tone as Tone);
+          if (data.welcome_message) setWelcomeMessage(data.welcome_message);
         }
-
-        if (existingBusinesses && existingBusinesses.length > 0) {
-          currentBusiness = existingBusinesses[0];
-        } else {
-          const defaultBusinessName =
-            currentUser.user_metadata?.company ||
-            currentUser.user_metadata?.full_name ||
-            'My Business';
-
-          const { data: newBusiness, error: insertError } = await supabase
-            .from('businesses')
-            .insert([
-              {
-                owner_id: currentUser.id,
-                name: defaultBusinessName,
-              },
-            ])
-            .select()
-            .single();
-
-          if (insertError) {
-            console.warn('Notice inserting business record:', insertError.message);
-          }
-          currentBusiness = newBusiness || { owner_id: currentUser.id, name: defaultBusinessName };
-        }
-
-        if (isMounted) {
-          setBusiness(currentBusiness);
-          if (currentBusiness?.name) {
-            setChatbotName(`${currentBusiness.name} Support`);
-          }
-        }
-
-        // Check the "packages" table where user_id = current user and product = SIGNUP_PRODUCT
-        const businessId = currentBusiness?.id || null;
-        try {
-          const { data: existingPackages, error: pkgError } = await supabase
-            .from('packages')
-            .select('*')
-            .eq('user_id', currentUser.id)
-            .eq('product', SIGNUP_PRODUCT);
-
-          if (pkgError) {
-            console.warn('Notice querying packages table in AssistDashboard:', pkgError.message);
-          }
-
-          if (!existingPackages || existingPackages.length === 0) {
-            const { error: insertPkgError } = await supabase
-              .from('packages')
-              .insert([
-                {
-                  user_id: currentUser.id,
-                  product: SIGNUP_PRODUCT,
-                  status: 'trial',
-                  plan: 'starter',
-                  business_id: businessId,
-                },
-              ]);
-
-            if (insertPkgError) {
-              console.warn('Notice creating assist package row:', insertPkgError.message);
-            }
-          }
-        } catch (pkgErr) {
-          console.warn('Packages check notice:', pkgErr);
-        }
-
-        // Fetch the FIRST chatbot row for this business only
-        if (businessId) {
-          try {
-            const { data } = await supabase
-              .from('chatbots')
-              .select('*')
-              .eq('business_id', businessId)
-              .order('created_at', { ascending: true })
-              .limit(1)
-              .maybeSingle();
-
-            if (data && isMounted) {
-              setChatbotId(data.id);
-              if (data.chatbot_name) setChatbotName(data.chatbot_name);
-              if (data.public_agent_name) setPublicAgentName(data.public_agent_name);
-              if (data.avatar_url) setAvatarPreview(data.avatar_url);
-              if (data.primary_color) setPrimaryColor(data.primary_color);
-              if (data.reply_language) setReplyLanguage(data.reply_language as ReplyLanguage);
-              if (data.tone) setTone(data.tone as Tone);
-              if (data.welcome_message) setWelcomeMessage(data.welcome_message);
-            }
-          } catch (botErr) {
-            console.warn('Notice querying chatbots table in AssistDashboard:', botErr);
-          }
-        }
-      } catch (err) {
-        console.error('Session validation error:', err);
-        navigate('/', { replace: true });
-        return;
-      } finally {
-        if (isMounted) {
-          setAuthChecking(false);
-        }
+      } catch (botErr) {
+        console.warn('Notice querying chatbots table in AssistDashboard:', botErr);
       }
     }
-
-    checkAuthAndBusiness();
-
+    loadChatbotConfig();
     return () => {
       isMounted = false;
     };
-  }, [navigate]);
+  }, [chatbotId]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({
@@ -381,122 +265,54 @@ export default function AssistDashboard() {
     { label: 'Sky', value: '#0EA5E9' },
   ];
 
-  if (authChecking) {
-    return (
-      <div className="min-h-screen bg-[#0A0A0B] text-gray-100 flex flex-col items-center justify-center relative font-sans isolate overflow-hidden">
-        <div className="fixed inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.12),rgba(255,255,255,0))] pointer-events-none -z-10" />
-        <div className="flex flex-col items-center gap-4">
-          <div className="relative">
-            <CeyraLogo className="w-12 h-12 animate-pulse" />
-            <div className="absolute -inset-2 bg-violet-600/20 blur-lg rounded-full -z-10" />
-          </div>
-          <div className="flex items-center gap-2 text-sm text-gray-400">
-            <Loader2 className="w-4 h-4 animate-spin text-violet-400" />
-            <span>Loading Chatbot Builder...</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   const businessDisplayName =
     business?.name || user?.user_metadata?.company || 'Colombo Bakery';
 
   return (
-    <main className="flex-1 w-full max-w-7xl mx-auto p-6 sm:p-8 lg:p-10">
-
-      {/* Breadcrumb: Back to Dashboard */}
-        <div className="mb-4">
-          <Link
-            to="/dashboard"
-            className="inline-flex items-center gap-2 text-xs font-semibold text-gray-400 hover:text-white transition-colors group"
-          >
-            <ArrowLeft className="w-4 h-4 text-violet-400 group-hover:-translate-x-1 transition-transform" />
-            <span>Back to Dashboard</span>
-          </Link>
+    <div className="pt-6 space-y-6">
+      {/* Header */}
+      <div className="pb-6 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+            Build your chatbot
+          </h1>
+          <p className="text-xs sm:text-sm text-gray-400 mt-1">
+            Configure branding, trilingual behavior, persona, and greetings for your assistant.
+          </p>
         </div>
 
-        {/* Header */}
-        <div className="pb-6 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-semibold uppercase tracking-wider text-violet-400 bg-violet-600/15 border border-violet-500/20 px-2.5 py-0.5 rounded-full">
-                Chatbots
-              </span>
-              <span className="text-[11px] text-gray-400 font-mono">Product: assist</span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
-              Build your chatbot
-            </h1>
-            <p className="text-xs sm:text-sm text-gray-400 mt-1">
-              Configure branding, trilingual behavior, persona, and greetings for your assistant.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2.5">
-            <Link
-              to="/dashboard/assist/embed"
-              className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-gray-300 hover:text-white transition-colors flex items-center gap-1.5"
-            >
-              <Code2 className="w-3.5 h-3.5 text-violet-400" />
-              <span>Embed Widget</span>
-            </Link>
-            <Link
-              to="/dashboard"
-              className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-gray-300 hover:text-white transition-colors flex items-center gap-1.5"
-            >
-              <LayoutDashboard className="w-3.5 h-3.5" />
-              <span>Dashboard Hub</span>
-            </Link>
-            <button
-              onClick={handleSaveChatbot}
-              disabled={isSaving}
-              className="px-5 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-semibold text-white shadow-lg shadow-violet-600/25 transition-all flex items-center gap-2"
-            >
-              {isSaving ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Check className="w-4 h-4" />
-              )}
-              <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Sub-Navigation Tabs */}
-        <div className="flex items-center gap-2 border-b border-white/10 pb-px mt-6">
-          <Link
-            to="/dashboard/assist"
-            className="flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 border-violet-500 text-violet-300 bg-violet-600/10 rounded-t-xl transition-colors"
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={handleSaveChatbot}
+            disabled={isSaving}
+            className="px-5 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-semibold text-white shadow-lg shadow-violet-600/25 transition-all flex items-center gap-2"
           >
-            <Sliders className="w-4 h-4 text-violet-400" />
-            <span>Chatbot Builder</span>
-          </Link>
-          <Link
-            to="/dashboard/assist/embed"
-            className="flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-200 hover:bg-white/[0.04] rounded-t-xl transition-colors"
-          >
-            <Code2 className="w-4 h-4 text-gray-400" />
-            <span>Embed & Allowed Domains</span>
-          </Link>
+            {isSaving ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Check className="w-4 h-4" />
+            )}
+            <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>
+          </button>
         </div>
+      </div>
 
-        {saveError && (
-          <div className="mt-4 p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center gap-2.5 text-xs text-rose-300 animate-in fade-in">
-            <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0" />
-            <span>{saveError}</span>
-          </div>
-        )}
+      {saveError && (
+        <div className="mt-4 p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center gap-2.5 text-xs text-rose-300 animate-in fade-in">
+          <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0" />
+          <span>{saveError}</span>
+        </div>
+      )}
 
-        {savedNotification && (
-          <div className="mt-4 p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center gap-2.5 text-xs text-emerald-300 animate-in fade-in">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-            <span>Chatbot configuration updated and deployed to your live channels!</span>
-          </div>
-        )}
+      {savedNotification && (
+        <div className="mt-4 p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center gap-2.5 text-xs text-emerald-300 animate-in fade-in">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+          <span>Chatbot configuration updated and deployed to your live channels!</span>
+        </div>
+      )}
 
-        {/* Builder Layout: Form on Left, Live Simulator on Right */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 my-8">
+      {/* Builder Layout: Form on Left, Live Simulator on Right */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 my-8">
           {/* Left Column: Chatbot Builder Form */}
           <div className="lg:col-span-7 space-y-6">
             <form onSubmit={handleSaveChatbot} className="space-y-6">
@@ -893,6 +709,6 @@ export default function AssistDashboard() {
             </div>
           </div>
         </div>
-    </main>
+    </div>
   );
 }

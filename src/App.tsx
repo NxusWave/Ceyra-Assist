@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
 import DashboardLayout from './components/DashboardLayout';
 import DashboardHub from './pages/DashboardHub';
+import AssistLayout from './layouts/AssistLayout';
 import AssistDashboard from './pages/AssistDashboard';
 import EmbedSettingsPage from './pages/EmbedSettingsPage';
 import AccountPage from './pages/AccountPage';
@@ -18,8 +19,10 @@ export default function App() {
         {/* Persistent console shell (sidebar + top bar) for /dashboard/* */}
         <Route path="/dashboard" element={<DashboardLayout />}>
           <Route index element={<DashboardHub />} />
-          <Route path="assist" element={<AssistDashboard />} />
-          <Route path="assist/embed" element={<EmbedSettingsPage />} />
+          <Route path="assist" element={<AssistLayout />}>
+            <Route index element={<AssistDashboard />} />
+            <Route path="embed" element={<EmbedSettingsPage />} />
+          </Route>
           <Route path="account" element={<AccountPage />} />
         </Route>
       </Routes>

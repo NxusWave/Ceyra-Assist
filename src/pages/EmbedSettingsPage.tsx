@@ -1,10 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
-  ArrowLeft,
-  LayoutDashboard,
-  Sliders,
-  Code2,
   Globe,
   Plus,
   Trash2,
@@ -17,9 +13,10 @@ import {
   Loader2,
   ShieldCheck,
   Info,
+  Code2,
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
-import { SIGNUP_PRODUCT } from '../components/DemoModal';
+import { useAssistContext } from '../contexts/AssistContext';
 
 interface ChatbotDomain {
   id: string;
@@ -54,13 +51,7 @@ function isValidDomain(domain: string): boolean {
 }
 
 export default function EmbedSettingsPage() {
-  const navigate = useNavigate();
-
-  const [authChecking, setAuthChecking] = useState(true);
-  const [user, setUser] = useState<any>(null);
-  const [business, setBusiness] = useState<any>(null);
-  const [plan, setPlan] = useState<string>('starter');
-  const [chatbotId, setChatbotId] = useState<string>('');
+  const { business, chatbotId, plan } = useAssistContext();
 
   const [domains, setDomains] = useState<ChatbotDomain[]>([]);
   const [loadingDomains, setLoadingDomains] = useState(true);
@@ -77,142 +68,41 @@ export default function EmbedSettingsPage() {
   useEffect(() => {
     let isMounted = true;
 
-    async function loadEmbedData() {
+    async function loadDomains() {
+      if (!chatbotId) {
+        setLoadingDomains(false);
+        return;
+      }
+      setLoadingDomains(true);
       try {
-        // 1. Session verification guard
-        const {
-          data: { session },
-          error: sessionError,
-        } = await supabase.auth.getSession();
-
-        if (sessionError || !session || !session.user) {
-          navigate('/', { replace: true });
-          return;
-        }
-
-        const currentUser = session.user;
-        if (isMounted) setUser(currentUser);
-
-        // 2. Fetch business row for current user
-        let currentBusiness: any = null;
-        const { data: existingBusinesses } = await supabase
-          .from('businesses')
+        const { data: domainRows, error: domError } = await supabase
+          .from('chatbot_domains')
           .select('*')
-          .eq('owner_id', currentUser.id);
+          .eq('chatbot_id', chatbotId)
+          .order('created_at', { ascending: true });
 
-        if (existingBusinesses && existingBusinesses.length > 0) {
-          currentBusiness = existingBusinesses[0];
-        } else {
-          const defaultBusinessName =
-            currentUser.user_metadata?.company ||
-            currentUser.user_metadata?.full_name ||
-            'My Business';
-
-          const { data: newBusiness } = await supabase
-            .from('businesses')
-            .insert([
-              {
-                owner_id: currentUser.id,
-                name: defaultBusinessName,
-              },
-            ])
-            .select()
-            .single();
-
-          currentBusiness = newBusiness || { owner_id: currentUser.id, name: defaultBusinessName };
+        if (domError) {
+          console.warn('Notice loading chatbot_domains:', domError.message);
         }
 
-        if (isMounted) setBusiness(currentBusiness);
-
-        // 3. Resolve plan from business table (with package fallback)
-        let resolvedPlan = currentBusiness?.plan || '';
-        if (!resolvedPlan) {
-          const { data: packageRows } = await supabase
-            .from('packages')
-            .select('plan')
-            .eq('user_id', currentUser.id)
-            .eq('product', SIGNUP_PRODUCT)
-            .maybeSingle();
-
-          if (packageRows?.plan) {
-            resolvedPlan = packageRows.plan;
-          }
-        }
-        if (!resolvedPlan) {
-          resolvedPlan = 'starter';
-        }
-        if (isMounted) setPlan(resolvedPlan.toLowerCase());
-
-        // 4. Fetch or ensure chatbot record exists for business
-        const businessId = currentBusiness?.id || null;
-        let resolvedChatbotId = '';
-
-        if (businessId) {
-          const { data: chatbotData } = await supabase
-            .from('chatbots')
-            .select('id, chatbot_name')
-            .eq('business_id', businessId)
-            .order('created_at', { ascending: true })
-            .limit(1)
-            .maybeSingle();
-
-          if (chatbotData) {
-            resolvedChatbotId = chatbotData.id;
-          } else {
-            const { data: createdChatbot } = await supabase
-              .from('chatbots')
-              .insert([
-                {
-                  business_id: businessId,
-                  chatbot_name: `${currentBusiness?.name || 'Colombo Bakery'} Support`,
-                  public_agent_name: 'Ceyra Assistant',
-                },
-              ])
-              .select()
-              .single();
-
-            if (createdChatbot) {
-              resolvedChatbotId = createdChatbot.id;
-            }
-          }
-        }
-
-        if (isMounted) {
-          setChatbotId(resolvedChatbotId);
-        }
-
-        // 5. Fetch registered domains from chatbot_domains
-        if (resolvedChatbotId) {
-          const { data: domainRows, error: domError } = await supabase
-            .from('chatbot_domains')
-            .select('*')
-            .eq('chatbot_id', resolvedChatbotId)
-            .order('created_at', { ascending: true });
-
-          if (domError) {
-            console.warn('Notice loading chatbot_domains:', domError.message);
-          }
-
-          if (isMounted && domainRows) {
-            setDomains(domainRows);
-          }
+        if (isMounted && domainRows) {
+          setDomains(domainRows);
         }
       } catch (err) {
-        console.error('Error loading embed settings:', err);
+        console.error('Error loading embed domains:', err);
       } finally {
         if (isMounted) {
-          setAuthChecking(false);
           setLoadingDomains(false);
         }
       }
     }
 
-    loadEmbedData();
+    loadDomains();
 
     return () => {
       isMounted = false;
     };
-  }, [navigate]);
+  }, [chatbotId]);
 
   const isStarter = plan === 'starter' || plan === 'trial' || plan === 'free' || !plan;
   const isCapReached = isStarter && domains.length >= 1;
@@ -324,86 +214,10 @@ export default function EmbedSettingsPage() {
     }
   };
 
-  if (authChecking) {
-    return (
-      <div className="min-h-screen bg-[#0A0A0B] text-gray-100 flex flex-col items-center justify-center relative font-sans isolate overflow-hidden">
-        <div className="fixed inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.12),rgba(255,255,255,0))] pointer-events-none -z-10" />
-        <div className="flex items-center gap-2 text-sm text-gray-400">
-          <Loader2 className="w-4 h-4 animate-spin text-violet-400" />
-          <span>Loading Embed Settings...</span>
-        </div>
-      </div>
-    );
-  }
-
-  const planLabel = plan.charAt(0).toUpperCase() + plan.slice(1);
+  const planLabel = (plan || 'starter').charAt(0).toUpperCase() + (plan || 'starter').slice(1);
 
   return (
-    <main className="flex-1 w-full max-w-7xl mx-auto p-6 sm:p-8 lg:p-10 space-y-8">
-      {/* Breadcrumb navigation */}
-      <div>
-        <Link
-          to="/dashboard/assist"
-          className="inline-flex items-center gap-2 text-xs font-semibold text-gray-400 hover:text-white transition-colors group"
-        >
-          <ArrowLeft className="w-4 h-4 text-violet-400 group-hover:-translate-x-1 transition-transform" />
-          <span>Back to Chatbot Builder</span>
-        </Link>
-      </div>
-
-      {/* Header */}
-      <div className="pb-6 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-semibold uppercase tracking-wider text-violet-400 bg-violet-600/15 border border-violet-500/20 px-2.5 py-0.5 rounded-full">
-              Chatbots
-            </span>
-            <span className="text-[11px] text-gray-400 font-mono">Product: assist</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
-            Embed & Allowed Domains
-          </h1>
-          <p className="text-xs sm:text-sm text-gray-400 mt-1">
-            Authorize origin websites to display your chat widget and copy your snippet.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Link
-            to="/dashboard"
-            className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-gray-300 hover:text-white transition-colors flex items-center gap-1.5"
-          >
-            <LayoutDashboard className="w-3.5 h-3.5" />
-            <span>Dashboard Hub</span>
-          </Link>
-          <Link
-            to="/dashboard/assist"
-            className="px-4 py-2 rounded-xl bg-violet-600/15 hover:bg-violet-600/25 border border-violet-500/30 text-xs font-semibold text-violet-300 transition-colors flex items-center gap-1.5"
-          >
-            <Sliders className="w-3.5 h-3.5 text-violet-400" />
-            <span>Chatbot Builder</span>
-          </Link>
-        </div>
-      </div>
-
-      {/* Sub-Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-white/10 pb-px">
-        <Link
-          to="/dashboard/assist"
-          className="flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-200 hover:bg-white/[0.04] rounded-t-xl transition-colors"
-        >
-          <Sliders className="w-4 h-4 text-gray-400" />
-          <span>Chatbot Builder</span>
-        </Link>
-        <Link
-          to="/dashboard/assist/embed"
-          className="flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 border-violet-500 text-violet-300 bg-violet-600/10 rounded-t-xl transition-colors"
-        >
-          <Code2 className="w-4 h-4 text-violet-400" />
-          <span>Embed & Allowed Domains</span>
-        </Link>
-      </div>
-
+    <div className="pt-6">
       {/* Main Grid: Allowed Domains on Left (7 cols), Snippet & Instructions on Right (5 cols) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left Column: Allowed Domains */}
@@ -688,6 +502,6 @@ export default function EmbedSettingsPage() {
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 }
