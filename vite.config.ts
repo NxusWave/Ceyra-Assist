@@ -4,25 +4,36 @@ import path from 'path';
 import { defineConfig, type Plugin } from 'vite';
 import handler from './api/hero-chat.js';
 import widgetHandler from './api/widget-chat.js';
+import widgetConfigHandler from './api/widget-config.js';
 
 function apiMiddlewarePlugin(): Plugin {
   return {
     name: 'api-middleware',
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
-        const url = req.url ? req.url.split('?')[0] : '';
-        if (url === '/api/hero-chat' || url === '/api/widget-chat') {
-          const routeHandler = url === '/api/hero-chat' ? handler : widgetHandler;
-          let bodyStr = '';
-          req.on('data', (chunk) => {
-            bodyStr += chunk;
-          });
-          req.on('end', async () => {
+        const rawUrl = req.url || '';
+        const pathname = rawUrl.split('?')[0];
+        if (
+          pathname === '/api/hero-chat' ||
+          pathname === '/api/widget-chat' ||
+          pathname === '/api/widget-config'
+        ) {
+          const routeHandler =
+            pathname === '/api/hero-chat'
+              ? handler
+              : pathname === '/api/widget-chat'
+              ? widgetHandler
+              : widgetConfigHandler;
+
+          const parsedUrl = new URL(rawUrl, 'http://localhost:3000');
+          const query = Object.fromEntries(parsedUrl.searchParams.entries());
+
+          const executeHandler = async (body: any = {}) => {
             try {
-              const body = bodyStr ? JSON.parse(bodyStr) : {};
               const customReq = {
                 method: req.method,
                 body,
+                query,
                 headers: req.headers,
               };
               const customRes = {
@@ -43,6 +54,20 @@ function apiMiddlewarePlugin(): Plugin {
               res.setHeader('Content-Type', 'application/json');
               res.end(JSON.stringify({ error: 'Server middleware error' }));
             }
+          };
+
+          if (req.method === 'GET' || req.method === 'OPTIONS') {
+            await executeHandler({});
+            return;
+          }
+
+          let bodyStr = '';
+          req.on('data', (chunk) => {
+            bodyStr += chunk;
+          });
+          req.on('end', async () => {
+            const body = bodyStr ? JSON.parse(bodyStr) : {};
+            await executeHandler(body);
           });
           return;
         }
