@@ -18,6 +18,7 @@ import {
   Check,
   HelpCircle,
   AlertCircle,
+  Code2,
 } from 'lucide-react';
 import CeyraLogo from '../components/CeyraLogo';
 import { supabase } from '../lib/supabaseClient';
@@ -432,10 +433,17 @@ export default function AssistDashboard() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            <Link
+              to="/dashboard/assist/embed"
+              className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-gray-300 hover:text-white transition-colors flex items-center gap-1.5"
+            >
+              <Code2 className="w-3.5 h-3.5 text-violet-400" />
+              <span>Embed Widget</span>
+            </Link>
             <Link
               to="/dashboard"
-              className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-gray-300 hover:text-white transition-colors flex items-center gap-1.5"
+              className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-gray-300 hover:text-white transition-colors flex items-center gap-1.5"
             >
               <LayoutDashboard className="w-3.5 h-3.5" />
               <span>Dashboard Hub</span>
@@ -453,6 +461,24 @@ export default function AssistDashboard() {
               <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>
             </button>
           </div>
+        </div>
+
+        {/* Sub-Navigation Tabs */}
+        <div className="flex items-center gap-2 border-b border-white/10 pb-px mt-6">
+          <Link
+            to="/dashboard/assist"
+            className="flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 border-violet-500 text-violet-300 bg-violet-600/10 rounded-t-xl transition-colors"
+          >
+            <Sliders className="w-4 h-4 text-violet-400" />
+            <span>Chatbot Builder</span>
+          </Link>
+          <Link
+            to="/dashboard/assist/embed"
+            className="flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-200 hover:bg-white/[0.04] rounded-t-xl transition-colors"
+          >
+            <Code2 className="w-4 h-4 text-gray-400" />
+            <span>Embed & Allowed Domains</span>
+          </Link>
         </div>
 
         {saveError && (
