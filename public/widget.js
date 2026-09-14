@@ -90,11 +90,11 @@
     .ceyra-window.open { display: flex; }
     @keyframes ceyra-pop { from { opacity: 0; transform: scale(0.95) translateY(8px); } to { opacity: 1; transform: none; } }
 
-    /* Light theme — lighter frosted glass; the host site softly shows through */
-    .ceyra-window { --ceyra-bg: rgba(255,255,255,0.84); --ceyra-border: rgba(17,17,26,0.08);
+    /* Light theme — clearly frosted glass; the host site shows through */
+    .ceyra-window { --ceyra-bg: rgba(255,255,255,0.55); --ceyra-border: rgba(17,17,26,0.10);
       --ceyra-text: #17171f;
       --ceyra-bot-text: #26262e;
-      --ceyra-input-bg: rgba(255,255,255,0.72); --ceyra-input-border: rgba(17,17,26,0.10);
+      --ceyra-input-bg: rgba(255,255,255,0.5); --ceyra-input-border: rgba(17,17,26,0.12);
       --ceyra-muted: #6d6d7a; }
     /* Dark theme — follows visitors (and dark host sites) automatically */
     @media (prefers-color-scheme: dark) {
