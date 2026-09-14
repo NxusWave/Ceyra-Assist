@@ -39,7 +39,7 @@ export default async function handler(req, res) {
     const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
 
     if (!isLocalhost) {
-      const { data: allowedDomains, error: domainFetchError } = await supabaseAdmin
+      const { data: allowedDomains } = await supabaseAdmin
         .from("chatbot_domains")
         .select("domain")
         .eq("chatbot_id", chatbotId);
@@ -48,15 +48,6 @@ export default async function handler(req, res) {
       const isAllowed = hostname && domainList.includes(hostname);
 
       if (!isAllowed) {
-        // Rejection details are logged server-side only — never returned to
-        // the client, so callers can't enumerate a chatbot's domain allowlist.
-        console.error("widget-config domain rejection:", {
-          receivedOrigin: origin,
-          extractedHostname: hostname,
-          chatbotIdReceived: chatbotId,
-          domainsFoundInDb: domainList,
-          supabaseError: domainFetchError ? domainFetchError.message : null,
-        });
         return res.status(403).json({ error: "This domain is not authorized for this chatbot." });
       }
     }

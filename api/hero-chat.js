@@ -56,6 +56,21 @@ export default async function handler(req, res) {
     const reply = response.text || "Sorry, I could not generate a response.";
     return res.status(200).json({ reply });
   } catch (error) {
+    console.error("hero-chat error:", error);
+
+    const message = error?.message || "";
+    const isRateLimited =
+      message.includes("429") ||
+      message.toLowerCase().includes("quota") ||
+      message.toLowerCase().includes("overloaded") ||
+      message.toLowerCase().includes("resource_exhausted");
+
+    if (isRateLimited) {
+      return res.status(429).json({
+        reply: "The assistant is busy right now — please send your message again in a moment.",
+      });
+    }
+
     return res.status(500).json({ error: "An error occurred while processing your request. Please try again later." });
   }
 }
