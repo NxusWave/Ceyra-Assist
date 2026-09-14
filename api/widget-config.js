@@ -39,7 +39,7 @@ export default async function handler(req, res) {
     const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
 
     if (!isLocalhost) {
-      const { data: allowedDomains } = await supabaseAdmin
+      const { data: allowedDomains, error: domainFetchError } = await supabaseAdmin
         .from("chatbot_domains")
         .select("domain")
         .eq("chatbot_id", chatbotId);
@@ -48,7 +48,16 @@ export default async function handler(req, res) {
       const isAllowed = hostname && domainList.includes(hostname);
 
       if (!isAllowed) {
-        return res.status(403).json({ error: "This domain is not authorized for this chatbot." });
+        return res.status(403).json({
+          error: "This domain is not authorized for this chatbot.",
+          debug: {
+            receivedOrigin: origin,
+            extractedHostname: hostname,
+            chatbotIdReceived: chatbotId,
+            domainsFoundInDb: domainList,
+            supabaseError: domainFetchError ? domainFetchError.message : null,
+          },
+        });
       }
     }
 
