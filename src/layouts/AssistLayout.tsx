@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Sliders, Code2, LayoutDashboard, ArrowLeft, Loader2 } from 'lucide-react';
+import { Sliders, Code2, MessageSquare, LayoutDashboard, ArrowLeft, Loader2 } from 'lucide-react';
 import CeyraLogo from '../components/CeyraLogo';
 import { AssistProvider, useAssistContext } from '../contexts/AssistContext';
 
@@ -7,6 +7,7 @@ function AssistLayoutInner() {
   const { loading } = useAssistContext();
   const location = useLocation();
   const isEmbedTab = location.pathname === '/dashboard/assist/embed';
+  const isConversationsTab = location.pathname === '/dashboard/assist/conversations';
 
   if (loading) {
     return (
@@ -59,7 +60,7 @@ function AssistLayoutInner() {
           <Link
             to="/dashboard/assist"
             className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 rounded-t-xl transition-colors ${
-              !isEmbedTab
+              !isEmbedTab && !isConversationsTab
                 ? 'font-semibold border-violet-500 text-violet-300 bg-violet-600/10'
                 : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-white/[0.04]'
             }`}
@@ -77,6 +78,17 @@ function AssistLayoutInner() {
           >
             <Code2 className="w-4 h-4" />
             <span>Embed & Allowed Domains</span>
+          </Link>
+          <Link
+            to="/dashboard/assist/conversations"
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 rounded-t-xl transition-colors ${
+              isConversationsTab
+                ? 'font-semibold border-violet-500 text-violet-300 bg-violet-600/10'
+                : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-white/[0.04]'
+            }`}
+          >
+            <MessageSquare className="w-4 h-4" />
+            <span>Conversations</span>
           </Link>
         </div>
       </div>

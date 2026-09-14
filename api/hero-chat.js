@@ -1,5 +1,8 @@
 import { GoogleGenAI } from "@google/genai";
 
+// Give the serverless function room for cold starts + Gemini latency.
+export const maxDuration = 60;
+
 function buildSystemInstruction({ businessName, chatbotName, tone, replyLanguage }) {
   if (!businessName) {
     return "You are a helpful, friendly AI customer support assistant for a small business. Reply in the same language and script the customer used — Sinhala, Tamil, English, or a Singlish/Tanglish mix — matching their tone naturally. Keep answers short, friendly, and directly useful. If asked something specific you don't have details about, politely say you'd connect them with the team for that, without inventing details.";

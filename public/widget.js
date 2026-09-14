@@ -25,47 +25,147 @@
   var isOpen = false;
   var isConfigured = false; // becomes true once config successfully loads
 
+  // --- Colour helpers: keep text readable on any brand colour ---
+  function hexToRgb(hex) {
+    var h = (hex || '').replace('#', '');
+    if (h.length === 3) {
+      h = h.charAt(0) + h.charAt(0) + h.charAt(1) + h.charAt(1) + h.charAt(2) + h.charAt(2);
+    }
+    var n = parseInt(h.slice(0, 6), 16);
+    if (isNaN(n)) n = 0x8b5cf6;
+    return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+  }
+  function isLightColor(hex) {
+    var c = hexToRgb(hex);
+    return (0.299 * c.r + 0.587 * c.g + 0.114 * c.b) / 255 > 0.62;
+  }
+  function contrastText(hex) {
+    return isLightColor(hex) ? '#16161d' : '#ffffff';
+  }
+  function shade(hex, percent) {
+    var c = hexToRgb(hex);
+    var t = percent < 0 ? 0 : 255;
+    var p = Math.abs(percent) / 100;
+    var r = Math.round((t - c.r) * p + c.r);
+    var g = Math.round((t - c.g) * p + c.g);
+    var b = Math.round((t - c.b) * p + c.b);
+    return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  }
+  function escapeHtml(str) {
+    return String(str == null ? '' : str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  var ICON_CHAT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>';
+  var ICON_CLOSE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
+  var ICON_SEND = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg>';
+
   // --- Inject styles ---
   var style = document.createElement('style');
   style.textContent = `
+    .ceyra-widget, .ceyra-widget * { box-sizing: border-box; }
+
     .ceyra-bubble { position: fixed; bottom: 20px; right: 20px; width: 56px; height: 56px;
-      border-radius: 50%; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+      border-radius: 50%; cursor: pointer; border: none; color: #fff;
       display: flex; align-items: center; justify-content: center; z-index: 999999;
-      transition: transform 0.2s ease; border: none; }
-    .ceyra-bubble:hover { transform: scale(1.08); }
-    .ceyra-bubble svg { width: 26px; height: 26px; }
-    .ceyra-window { position: fixed; bottom: 90px; right: 20px; width: 340px; max-width: calc(100vw - 40px);
-      height: 480px; max-height: calc(100vh - 120px); background: #0E0E12; border-radius: 20px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.35); display: none; flex-direction: column;
-      overflow: hidden; z-index: 999999; font-family: -apple-system, sans-serif; }
+      box-shadow: 0 6px 22px rgba(0,0,0,0.30);
+      transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .ceyra-bubble:hover { transform: scale(1.07); box-shadow: 0 9px 28px rgba(0,0,0,0.35); }
+    .ceyra-bubble:active { transform: scale(0.97); }
+    .ceyra-bubble svg { width: 24px; height: 24px; }
+
+    .ceyra-window { position: fixed; bottom: 90px; right: 20px; width: 370px; max-width: calc(100vw - 32px);
+      height: 520px; max-height: calc(100vh - 110px); border-radius: 18px; overflow: hidden;
+      display: none; flex-direction: column; z-index: 999999;
+      border: 1px solid var(--ceyra-border); background: var(--ceyra-bg);
+      box-shadow: 0 18px 50px rgba(0,0,0,0.30);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      transform-origin: bottom right; animation: ceyra-pop 0.18s ease-out; }
     .ceyra-window.open { display: flex; }
-    .ceyra-header { padding: 14px; color: #fff; display: flex; align-items: center; gap: 10px; }
-    .ceyra-header img, .ceyra-header .ceyra-avatar-fallback { width: 32px; height: 32px; border-radius: 8px;
-      object-fit: cover; background: rgba(255,255,255,0.2); }
-    .ceyra-header-text { font-size: 13px; font-weight: 700; }
+    @keyframes ceyra-pop { from { opacity: 0; transform: scale(0.95) translateY(8px); } to { opacity: 1; transform: none; } }
+
+    /* Light theme — blends into light host sites */
+    .ceyra-window { --ceyra-bg: #ffffff; --ceyra-border: rgba(17,17,26,0.08);
+      --ceyra-body-bg: #f6f6f9; --ceyra-text: #17171f;
+      --ceyra-bot-bubble: #ffffff; --ceyra-bot-text: #26262e; --ceyra-bot-border: rgba(17,17,26,0.06);
+      --ceyra-input-bg: #ffffff; --ceyra-input-border: rgba(17,17,26,0.14);
+      --ceyra-muted: #83838f; }
+    /* Dark theme — follows visitors (and dark host sites) automatically */
+    @media (prefers-color-scheme: dark) {
+      .ceyra-window { --ceyra-bg: #121217; --ceyra-border: rgba(255,255,255,0.09);
+        --ceyra-body-bg: #0b0b0f; --ceyra-text: #f1f1f5;
+        --ceyra-bot-bubble: rgba(255,255,255,0.07); --ceyra-bot-text: #e9e9ef; --ceyra-bot-border: rgba(255,255,255,0.08);
+        --ceyra-input-bg: rgba(255,255,255,0.06); --ceyra-input-border: rgba(255,255,255,0.13);
+        --ceyra-muted: #9c9caa; }
+    }
+
+    .ceyra-header { padding: 13px 14px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .ceyra-header img, .ceyra-header .ceyra-avatar-fallback { width: 38px; height: 38px; border-radius: 11px;
+      object-fit: cover; background: rgba(255,255,255,0.25); flex-shrink: 0; }
+    .ceyra-avatar-fallback { display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 14px; color: #fff; }
+    .ceyra-header-meta { flex: 1; min-width: 0; }
+    .ceyra-header-name { font-size: 13.5px; font-weight: 700; line-height: 1.25;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ceyra-header-status { font-size: 11px; opacity: 0.9; display: flex; align-items: center; gap: 5px; margin-top: 1px; }
+    .ceyra-status-dot { width: 7px; height: 7px; border-radius: 50%; background: #4ade80;
+      box-shadow: 0 0 0 3px rgba(74,222,128,0.22); flex-shrink: 0; }
+    .ceyra-close { border: none; width: 27px; height: 27px; border-radius: 8px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      background: rgba(255,255,255,0.18); color: inherit; transition: background 0.15s ease; }
+    .ceyra-close:hover { background: rgba(255,255,255,0.32); }
+    .ceyra-close svg { width: 12px; height: 12px; }
     .ceyra-body { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 8px;
-      background: #0A0A0B; }
-    .ceyra-msg { max-width: 80%; padding: 9px 12px; border-radius: 14px; font-size: 13px; line-height: 1.4; }
-    .ceyra-msg.bot { background: rgba(255,255,255,0.06); color: #e5e5e5; align-self: flex-start; border-bottom-left-radius: 4px; }
-    .ceyra-msg.user { color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
-    .ceyra-input-row { display: flex; gap: 8px; padding: 10px; background: #0E0E12; border-top: 1px solid rgba(255,255,255,0.08); }
-    .ceyra-input { flex: 1; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 10px; padding: 8px 10px; color: #fff; font-size: 13px; outline: none; }
-    .ceyra-send { border: none; border-radius: 10px; width: 34px; height: 34px; color: #fff; cursor: pointer;
-      display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .ceyra-typing { display: flex; gap: 3px; padding: 8px 12px; align-self: flex-start; }
-    .ceyra-typing span { width: 5px; height: 5px; border-radius: 50%; background: #8B5CF6; animation: ceyra-bounce 1s infinite; }
+      background: var(--ceyra-body-bg); }
+    .ceyra-msg { max-width: 82%; padding: 9px 12px; border-radius: 14px; font-size: 13px; line-height: 1.5;
+      word-wrap: break-word; white-space: pre-wrap; }
+    .ceyra-msg.bot { background: var(--ceyra-bot-bubble); color: var(--ceyra-bot-text);
+      border: 1px solid var(--ceyra-bot-border); align-self: flex-start; border-bottom-left-radius: 5px; }
+    .ceyra-msg.user { align-self: flex-end; border-bottom-right-radius: 5px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.14); }
+
+    .ceyra-input-row { display: flex; gap: 8px; padding: 10px; background: var(--ceyra-bg);
+      border-top: 1px solid var(--ceyra-border); flex-shrink: 0; }
+    .ceyra-input { flex: 1; background: var(--ceyra-input-bg); border: 1px solid var(--ceyra-input-border);
+      border-radius: 10px; padding: 9px 11px; color: var(--ceyra-text); font-size: 13px; outline: none;
+      transition: border-color 0.15s ease; }
+    .ceyra-input::placeholder { color: var(--ceyra-muted); }
+    .ceyra-input:focus { border-color: var(--ceyra-brand, #8B5CF6); }
+    .ceyra-send { border: none; border-radius: 10px; width: 36px; height: 36px; color: #fff; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      transition: filter 0.15s ease, transform 0.1s ease; }
+    .ceyra-send svg { width: 16px; height: 16px; }
+    .ceyra-send:hover { filter: brightness(1.1); }
+    .ceyra-send:active { transform: scale(0.95); }
+
+    .ceyra-typing { display: flex; gap: 3px; padding: 11px 13px; align-self: flex-start;
+      background: var(--ceyra-bot-bubble); border: 1px solid var(--ceyra-bot-border);
+      border-radius: 14px; border-bottom-left-radius: 5px; }
+    .ceyra-typing span { width: 5px; height: 5px; border-radius: 50%; background: var(--ceyra-brand, #8B5CF6); animation: ceyra-bounce 1s infinite; }
     .ceyra-typing span:nth-child(2) { animation-delay: 0.15s; }
     .ceyra-typing span:nth-child(3) { animation-delay: 0.3s; }
     @keyframes ceyra-bounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-4px); } }
-    .ceyra-unavailable { padding: 16px; color: #999; font-size: 12px; text-align: center; }
+
+    .ceyra-footer { padding: 6px 12px 9px; text-align: center; background: var(--ceyra-bg);
+      border-top: 1px solid var(--ceyra-border); flex-shrink: 0; }
+    .ceyra-footer a { font-size: 10px; font-weight: 600; letter-spacing: 0.02em;
+      color: var(--ceyra-muted); text-decoration: none; }
+    .ceyra-footer a:hover { color: var(--ceyra-brand, #8B5CF6); }
+
+    .ceyra-unavailable { padding: 24px 16px; color: var(--ceyra-muted); font-size: 12.5px;
+      text-align: center; line-height: 1.6; }
   `;
   document.head.appendChild(style);
 
   // --- Build DOM ---
   var bubble = document.createElement('button');
   bubble.className = 'ceyra-bubble';
-  bubble.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>';
+  bubble.setAttribute('aria-label', 'Open chat');
+  bubble.innerHTML = ICON_CHAT;
+  bubble.style.background = 'linear-gradient(135deg, #8B5CF6, #7C3AED)'; // recoloured once config loads
 
   var win = document.createElement('div');
   win.className = 'ceyra-window';
@@ -74,32 +174,48 @@
   document.body.appendChild(win);
 
   function renderUnavailable() {
-    win.innerHTML = '<div class="ceyra-unavailable">Chat is currently unavailable.</div>';
+    win.innerHTML = '<div class="ceyra-unavailable">Chat is currently unavailable.<br/>Please try again later.</div>';
   }
 
   function renderWindow() {
-    var color = config.primaryColor;
+    var color = /^#[0-9a-fA-F]{3,8}$/.test(config.primaryColor || '') ? config.primaryColor : '#8B5CF6';
+    var onBrand = contrastText(color);
+    var initials = String(config.name || 'AI')
+      .split(/\s+/)
+      .slice(0, 2)
+      .map(function (w) { return w.charAt(0); })
+      .join('')
+      .toUpperCase();
     var avatarHtml = config.avatarUrl
-      ? '<img src="' + config.avatarUrl + '" alt="" />'
-      : '<div class="ceyra-avatar-fallback"></div>';
+      ? '<img src="' + escapeHtml(config.avatarUrl) + '" alt="" />'
+      : '<div class="ceyra-avatar-fallback">' + escapeHtml(initials) + '</div>';
 
     win.innerHTML =
-      '<div class="ceyra-header" style="background:' + color + '">' +
+      '<div class="ceyra-header" style="background:linear-gradient(135deg,' + color + ',' + shade(color, -18) + ');color:' + onBrand + '">' +
         avatarHtml +
-        '<div class="ceyra-header-text">' + config.name + '</div>' +
+        '<div class="ceyra-header-meta">' +
+          '<div class="ceyra-header-name">' + escapeHtml(config.name) + '</div>' +
+          '<div class="ceyra-header-status"><span class="ceyra-status-dot"></span>Online now</div>' +
+        '</div>' +
+        '<button class="ceyra-close" id="ceyra-close" title="Close chat">' + ICON_CLOSE + '</button>' +
       '</div>' +
       '<div class="ceyra-body" id="ceyra-body">' +
-        '<div class="ceyra-msg bot">' + config.welcomeMessage + '</div>' +
+        '<div class="ceyra-msg bot">' + escapeHtml(config.welcomeMessage) + '</div>' +
       '</div>' +
       '<div class="ceyra-input-row">' +
         '<input class="ceyra-input" id="ceyra-input" type="text" placeholder="Type a message..." />' +
-        '<button class="ceyra-send" id="ceyra-send" style="background:' + color + '">' +
-          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg>' +
-        '</button>' +
-      '</div>';
+        '<button class="ceyra-send" id="ceyra-send" style="background:' + color + '" title="Send">' + ICON_SEND + '</button>' +
+      '</div>' +
+      '<div class="ceyra-footer"><a href="https://ceyra.ai" target="_blank" rel="noopener">Powered by Ceyra AI</a></div>';
+
+    // Apply the brand colour across bubble + window accents
+    win.style.setProperty('--ceyra-brand', color);
+    bubble.style.background = 'linear-gradient(135deg,' + color + ',' + shade(color, -18) + ')';
+    bubble.style.color = onBrand;
 
     var input = document.getElementById('ceyra-input');
     var sendBtn = document.getElementById('ceyra-send');
+    var closeBtn = document.getElementById('ceyra-close');
 
     function send() {
       var text = input.value.trim();
@@ -137,13 +253,18 @@
     input.addEventListener('keydown', function (e) {
       if (e.key === 'Enter') send();
     });
+    closeBtn.addEventListener('click', toggleWindow);
+    setTimeout(function () { input.focus(); }, 60);
   }
 
   function appendMessage(text, sender, color) {
     var body = document.getElementById('ceyra-body');
     var el = document.createElement('div');
     el.className = 'ceyra-msg ' + sender;
-    if (sender === 'user') el.style.background = color;
+    if (sender === 'user') {
+      el.style.background = color;
+      el.style.color = contrastText(color);
+    }
     el.textContent = text;
     body.appendChild(el);
     body.scrollTop = body.scrollHeight;
@@ -164,9 +285,10 @@
     if (el) el.remove();
   }
 
-  bubble.addEventListener('click', function () {
+  function toggleWindow() {
     isOpen = !isOpen;
     win.classList.toggle('open', isOpen);
+    bubble.innerHTML = isOpen ? ICON_CLOSE : ICON_CHAT;
 
     if (isOpen && !isConfigured) {
       fetch(API_BASE + '/api/widget-config?chatbotId=' + encodeURIComponent(chatbotId))
@@ -183,5 +305,12 @@
           renderUnavailable();
         });
     }
+  }
+
+  bubble.addEventListener('click', toggleWindow);
+
+  // Close with Escape — handy when the widget overlaps host content
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && isOpen) toggleWindow();
   });
 })();

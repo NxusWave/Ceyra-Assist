@@ -5,6 +5,7 @@ import DashboardHub from './pages/DashboardHub';
 import AssistLayout from './layouts/AssistLayout';
 import AssistDashboard from './pages/AssistDashboard';
 import EmbedSettingsPage from './pages/EmbedSettingsPage';
+import ConversationsPage from './pages/ConversationsPage';
 import AccountPage from './pages/AccountPage';
 import AuthSessionManager from './components/AuthSessionManager';
 
@@ -22,6 +23,7 @@ export default function App() {
           <Route path="assist" element={<AssistLayout />}>
             <Route index element={<AssistDashboard />} />
             <Route path="embed" element={<EmbedSettingsPage />} />
+            <Route path="conversations" element={<ConversationsPage />} />
           </Route>
           <Route path="account" element={<AccountPage />} />
         </Route>

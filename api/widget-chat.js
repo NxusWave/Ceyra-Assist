@@ -1,6 +1,10 @@
 import { GoogleGenAI } from "@google/genai";
 import { createClient } from "@supabase/supabase-js";
 
+// Give the serverless function room for cold starts + Gemini latency
+// (Vercel supports up to 60s; default is far shorter and causes 500s).
+export const maxDuration = 60;
+
 const supabaseAdmin = createClient(
   process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "https://placeholder.supabase.co",
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || "placeholder-key"
@@ -101,49 +105,47 @@ export default async function handler(req, res) {
       }
     }
 
-    // --- 3. Fetch chatbot config + business name ---
-    const { data: chatbot, error: chatbotError } = await supabaseAdmin
+    // --- 3 + 4. Fetch chatbot config (business name via FK join) and validate
+    // the conversation in parallel — cuts ~1 round trip off every message ---
+    const chatbotPromise = supabaseAdmin
       .from("chatbots")
-      .select("chatbot_name, public_agent_name, tone, reply_language, welcome_message, business_id")
+      .select("chatbot_name, public_agent_name, tone, reply_language, welcome_message, business_id, businesses(name)")
       .eq("id", chatbotId)
       .single();
+
+    const conversationPromise = conversationId
+      ? supabaseAdmin
+          .from("conversations")
+          .select("id, chatbot_id, visitor_id")
+          .eq("id", conversationId)
+          .maybeSingle()
+      : Promise.resolve({ data: null });
+
+    const [{ data: chatbot, error: chatbotError }, { data: existingConvo }] =
+      await Promise.all([chatbotPromise, conversationPromise]);
 
     if (chatbotError || !chatbot) {
       return res.status(404).json({ error: "Chatbot not found." });
     }
 
-    const { data: business } = await supabaseAdmin
-      .from("businesses")
-      .select("name")
-      .eq("id", chatbot.business_id)
-      .single();
+    const businessName = chatbot.businesses?.name || null;
 
-    // --- 4. Find or create conversation ---
+    // Reuse the conversation only if it belongs to this chatbot + visitor —
+    // prevents injecting messages into someone else's conversation.
     let convoId = null;
     let finalVisitorId = visitorId;
 
-    // If the client supplied a conversationId, verify it really belongs to
-    // this chatbot + visitor before reusing it — prevents injecting messages
-    // into someone else's conversation.
-    if (conversationId) {
-      const { data: existingConvo } = await supabaseAdmin
-        .from("conversations")
-        .select("id, chatbot_id, visitor_id")
-        .eq("id", conversationId)
-        .maybeSingle();
+    const belongsToBot = existingConvo && existingConvo.chatbot_id === chatbotId;
+    const belongsToVisitor =
+      !existingConvo?.visitor_id ||
+      !finalVisitorId ||
+      existingConvo.visitor_id === finalVisitorId;
 
-      const belongsToBot = existingConvo && existingConvo.chatbot_id === chatbotId;
-      const belongsToVisitor =
-        !existingConvo?.visitor_id ||
-        !finalVisitorId ||
-        existingConvo.visitor_id === finalVisitorId;
-
-      if (belongsToBot && belongsToVisitor) {
-        convoId = existingConvo.id;
-      }
-      // Otherwise: invalid or foreign conversationId — fall through and start
-      // a fresh conversation. The widget self-heals from the new ID we return.
+    if (belongsToBot && belongsToVisitor) {
+      convoId = existingConvo.id;
     }
+    // Otherwise: invalid or foreign conversationId — start a fresh
+    // conversation. The widget self-heals from the new ID we return.
 
     if (!convoId) {
       finalVisitorId = finalVisitorId || crypto.randomUUID();
@@ -176,7 +178,7 @@ export default async function handler(req, res) {
 
     const ai = new GoogleGenAI({ apiKey });
     const systemInstruction = buildSystemInstruction({
-      businessName: business?.name,
+      businessName: businessName,
       chatbotName: chatbot.public_agent_name,
       tone: chatbot.tone,
       replyLanguage: chatbot.reply_language,
@@ -190,17 +192,19 @@ export default async function handler(req, res) {
 
     const reply = response.text || "Sorry, I could not generate a response.";
 
-    // --- 7. Log the bot's reply + update conversation timestamp ---
+    // --- 7. Log the bot's reply + update conversation timestamp (parallel) ---
     if (convoId) {
-      await supabaseAdmin.from("messages").insert({
-        conversation_id: convoId,
-        role: "assistant",
-        content: reply,
-      });
-      await supabaseAdmin
-        .from("conversations")
-        .update({ last_message_at: new Date().toISOString() })
-        .eq("id", convoId);
+      await Promise.all([
+        supabaseAdmin.from("messages").insert({
+          conversation_id: convoId,
+          role: "assistant",
+          content: reply,
+        }),
+        supabaseAdmin
+          .from("conversations")
+          .update({ last_message_at: new Date().toISOString() })
+          .eq("id", convoId),
+      ]);
     }
 
     return res.status(200).json({
@@ -209,7 +213,12 @@ export default async function handler(req, res) {
       visitorId: finalVisitorId,
     });
   } catch (error) {
-    console.error("widget-chat error:", error);
+    console.error("widget-chat error:", {
+      message: error?.message || String(error),
+      stack: error?.stack,
+      chatbotId,
+      origin,
+    });
     return res.status(500).json({ error: "An error occurred while processing your request. Please try again later." });
   }
 }
