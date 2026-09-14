@@ -48,16 +48,16 @@ export default async function handler(req, res) {
       const isAllowed = hostname && domainList.includes(hostname);
 
       if (!isAllowed) {
-        return res.status(403).json({
-          error: "This domain is not authorized for this chatbot.",
-          debug: {
-            receivedOrigin: origin,
-            extractedHostname: hostname,
-            chatbotIdReceived: chatbotId,
-            domainsFoundInDb: domainList,
-            supabaseError: domainFetchError ? domainFetchError.message : null,
-          },
+        // Rejection details are logged server-side only — never returned to
+        // the client, so callers can't enumerate a chatbot's domain allowlist.
+        console.error("widget-config domain rejection:", {
+          receivedOrigin: origin,
+          extractedHostname: hostname,
+          chatbotIdReceived: chatbotId,
+          domainsFoundInDb: domainList,
+          supabaseError: domainFetchError ? domainFetchError.message : null,
         });
+        return res.status(403).json({ error: "This domain is not authorized for this chatbot." });
       }
     }
 

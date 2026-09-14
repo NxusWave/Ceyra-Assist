@@ -119,8 +119,31 @@ export default async function handler(req, res) {
       .single();
 
     // --- 4. Find or create conversation ---
-    let convoId = conversationId;
+    let convoId = null;
     let finalVisitorId = visitorId;
+
+    // If the client supplied a conversationId, verify it really belongs to
+    // this chatbot + visitor before reusing it — prevents injecting messages
+    // into someone else's conversation.
+    if (conversationId) {
+      const { data: existingConvo } = await supabaseAdmin
+        .from("conversations")
+        .select("id, chatbot_id, visitor_id")
+        .eq("id", conversationId)
+        .maybeSingle();
+
+      const belongsToBot = existingConvo && existingConvo.chatbot_id === chatbotId;
+      const belongsToVisitor =
+        !existingConvo?.visitor_id ||
+        !finalVisitorId ||
+        existingConvo.visitor_id === finalVisitorId;
+
+      if (belongsToBot && belongsToVisitor) {
+        convoId = existingConvo.id;
+      }
+      // Otherwise: invalid or foreign conversationId — fall through and start
+      // a fresh conversation. The widget self-heals from the new ID we return.
+    }
 
     if (!convoId) {
       finalVisitorId = finalVisitorId || crypto.randomUUID();
