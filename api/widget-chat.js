@@ -19,6 +19,18 @@ function extractHostname(origin) {
   }
 }
 
+// crypto.randomUUID isn't guaranteed on every serverless runtime — fall back.
+function generateVisitorId() {
+  try {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+  } catch (_) {
+    /* fall through to the manual generator */
+  }
+  return "v_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+}
+
 function buildSystemInstruction({ businessName, chatbotName, tone, replyLanguage }) {
   let langInstruction =
     "Always reply in the same language and script the customer used — Sinhala, Tamil, English, or a Singlish/Tanglish mix — matching their tone naturally.";
@@ -76,32 +88,37 @@ export default async function handler(req, res) {
 
     // --- 2. Rate limiting (best-effort; skip gracefully if Upstash env vars aren't set) ---
     if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
-      const { Ratelimit } = await import("@upstash/ratelimit");
-      const { Redis } = await import("@upstash/redis");
-      const redis = new Redis({
-        url: process.env.KV_REST_API_URL,
-        token: process.env.KV_REST_API_TOKEN,
-      });
+      try {
+        const { Ratelimit } = await import("@upstash/ratelimit");
+        const { Redis } = await import("@upstash/redis");
+        const redis = new Redis({
+          url: process.env.KV_REST_API_URL,
+          token: process.env.KV_REST_API_TOKEN,
+        });
 
-      const visitorKey = visitorId || "anonymous";
-      const perVisitorLimit = new Ratelimit({
-        redis,
-        limiter: Ratelimit.slidingWindow(15, "60 s"),
-        prefix: "widget-visitor",
-      });
-      const perChatbotLimit = new Ratelimit({
-        redis,
-        limiter: Ratelimit.slidingWindow(300, "60 s"),
-        prefix: "widget-chatbot",
-      });
+        const visitorKey = visitorId || "anonymous";
+        const perVisitorLimit = new Ratelimit({
+          redis,
+          limiter: Ratelimit.slidingWindow(15, "60 s"),
+          prefix: "widget-visitor",
+        });
+        const perChatbotLimit = new Ratelimit({
+          redis,
+          limiter: Ratelimit.slidingWindow(300, "60 s"),
+          prefix: "widget-chatbot",
+        });
 
-      const [visitorResult, chatbotResult] = await Promise.all([
-        perVisitorLimit.limit(`${chatbotId}:${visitorKey}`),
-        perChatbotLimit.limit(chatbotId),
-      ]);
+        const [visitorResult, chatbotResult] = await Promise.all([
+          perVisitorLimit.limit(`${chatbotId}:${visitorKey}`),
+          perChatbotLimit.limit(chatbotId),
+        ]);
 
-      if (!visitorResult.success || !chatbotResult.success) {
-        return res.status(429).json({ error: "Too many messages. Please slow down." });
+        if (!visitorResult.success || !chatbotResult.success) {
+          return res.status(429).json({ error: "Too many messages. Please slow down." });
+        }
+      } catch (rateErr) {
+        // Rate limiting must never break the chat — degrade gracefully.
+        console.error("widget-chat rate limit skipped:", rateErr?.message || rateErr);
       }
     }
 
@@ -148,7 +165,7 @@ export default async function handler(req, res) {
     // conversation. The widget self-heals from the new ID we return.
 
     if (!convoId) {
-      finalVisitorId = finalVisitorId || crypto.randomUUID();
+      finalVisitorId = finalVisitorId || generateVisitorId();
       const { data: newConvo } = await supabaseAdmin
         .from("conversations")
         .insert({
@@ -219,6 +236,9 @@ export default async function handler(req, res) {
       chatbotId,
       origin,
     });
-    return res.status(500).json({ error: "An error occurred while processing your request. Please try again later." });
+    return res.status(500).json({
+      error: "An error occurred while processing your request. Please try again later.",
+      errorDetail: error?.message || String(error),
+    });
   }
 }

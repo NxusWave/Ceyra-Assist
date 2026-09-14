@@ -81,25 +81,34 @@
       height: 520px; max-height: calc(100vh - 110px); border-radius: 18px; overflow: hidden;
       display: none; flex-direction: column; z-index: 999999;
       border: 1px solid var(--ceyra-border); background: var(--ceyra-bg);
+      backdrop-filter: blur(18px) saturate(1.5);
+      -webkit-backdrop-filter: blur(18px) saturate(1.5);
       box-shadow: 0 18px 50px rgba(0,0,0,0.30);
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       transform-origin: bottom right; animation: ceyra-pop 0.18s ease-out; }
     .ceyra-window.open { display: flex; }
     @keyframes ceyra-pop { from { opacity: 0; transform: scale(0.95) translateY(8px); } to { opacity: 1; transform: none; } }
 
-    /* Light theme — blends into light host sites */
-    .ceyra-window { --ceyra-bg: #ffffff; --ceyra-border: rgba(17,17,26,0.08);
-      --ceyra-body-bg: #f6f6f9; --ceyra-text: #17171f;
-      --ceyra-bot-bubble: #ffffff; --ceyra-bot-text: #26262e; --ceyra-bot-border: rgba(17,17,26,0.06);
-      --ceyra-input-bg: #ffffff; --ceyra-input-border: rgba(17,17,26,0.14);
-      --ceyra-muted: #83838f; }
+    /* Light theme — blurred translucent glass; the host site shows through */
+    .ceyra-window { --ceyra-bg: rgba(255,255,255,0.66); --ceyra-border: rgba(17,17,26,0.08);
+      --ceyra-text: #17171f;
+      --ceyra-bot-text: #26262e;
+      --ceyra-input-bg: rgba(255,255,255,0.55); --ceyra-input-border: rgba(17,17,26,0.10);
+      --ceyra-muted: #6d6d7a; }
     /* Dark theme — follows visitors (and dark host sites) automatically */
     @media (prefers-color-scheme: dark) {
-      .ceyra-window { --ceyra-bg: #121217; --ceyra-border: rgba(255,255,255,0.09);
-        --ceyra-body-bg: #0b0b0f; --ceyra-text: #f1f1f5;
-        --ceyra-bot-bubble: rgba(255,255,255,0.07); --ceyra-bot-text: #e9e9ef; --ceyra-bot-border: rgba(255,255,255,0.08);
-        --ceyra-input-bg: rgba(255,255,255,0.06); --ceyra-input-border: rgba(255,255,255,0.13);
+      .ceyra-window { --ceyra-bg: rgba(15,15,20,0.62); --ceyra-border: rgba(255,255,255,0.09);
+        --ceyra-text: #f1f1f5;
+        --ceyra-bot-text: #e9e9ef;
+        --ceyra-input-bg: rgba(255,255,255,0.07); --ceyra-input-border: rgba(255,255,255,0.13);
         --ceyra-muted: #9c9caa; }
+    }
+    /* Browsers without backdrop-filter fall back to a near-solid surface */
+    @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+      .ceyra-window { --ceyra-bg: rgba(255,255,255,0.97); }
+      @media (prefers-color-scheme: dark) {
+        .ceyra-window { --ceyra-bg: rgba(15,15,20,0.97); }
+      }
     }
 
     .ceyra-header { padding: 13px 14px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
@@ -118,23 +127,24 @@
       background: rgba(255,255,255,0.18); color: inherit; transition: background 0.15s ease; }
     .ceyra-close:hover { background: rgba(255,255,255,0.32); }
     .ceyra-close svg { width: 12px; height: 12px; }
-    .ceyra-body { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 8px;
-      background: var(--ceyra-body-bg); }
-    .ceyra-msg { max-width: 82%; padding: 9px 12px; border-radius: 14px; font-size: 13px; line-height: 1.5;
+    .ceyra-body { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px;
+      background: transparent; }
+    .ceyra-msg { max-width: 82%; font-size: 13px; line-height: 1.5;
       word-wrap: break-word; white-space: pre-wrap; }
-    .ceyra-msg.bot { background: var(--ceyra-bot-bubble); color: var(--ceyra-bot-text);
-      border: 1px solid var(--ceyra-bot-border); align-self: flex-start; border-bottom-left-radius: 5px; }
-    .ceyra-msg.user { align-self: flex-end; border-bottom-right-radius: 5px;
+    /* Bot replies: transparent, clean — no bubble chrome, brand-tinted label only */
+    .ceyra-msg.bot { background: transparent; color: var(--ceyra-bot-text); align-self: flex-start; padding: 2px 2px; }
+    .ceyra-msg.user { background: var(--ceyra-brand, #8B5CF6); color: var(--ceyra-on-brand, #ffffff);
+      padding: 9px 12px; border-radius: 14px; align-self: flex-end; border-bottom-right-radius: 5px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.14); }
 
-    .ceyra-input-row { display: flex; gap: 8px; padding: 10px; background: var(--ceyra-bg);
+    .ceyra-input-row { display: flex; gap: 8px; padding: 10px; background: var(--ceyra-input-bg);
       border-top: 1px solid var(--ceyra-border); flex-shrink: 0; }
     .ceyra-input { flex: 1; background: var(--ceyra-input-bg); border: 1px solid var(--ceyra-input-border);
       border-radius: 10px; padding: 9px 11px; color: var(--ceyra-text); font-size: 13px; outline: none;
       transition: border-color 0.15s ease; }
     .ceyra-input::placeholder { color: var(--ceyra-muted); }
     .ceyra-input:focus { border-color: var(--ceyra-brand, #8B5CF6); }
-    .ceyra-send { border: none; border-radius: 10px; width: 36px; height: 36px; color: #fff; cursor: pointer;
+    .ceyra-send { border: none; border-radius: 10px; width: 36px; height: 36px; color: var(--ceyra-on-brand, #fff); cursor: pointer;
       display: flex; align-items: center; justify-content: center; flex-shrink: 0;
       transition: filter 0.15s ease, transform 0.1s ease; }
     .ceyra-send svg { width: 16px; height: 16px; }
@@ -142,14 +152,14 @@
     .ceyra-send:active { transform: scale(0.95); }
 
     .ceyra-typing { display: flex; gap: 3px; padding: 11px 13px; align-self: flex-start;
-      background: var(--ceyra-bot-bubble); border: 1px solid var(--ceyra-bot-border);
+      background: var(--ceyra-input-bg); border: 1px solid var(--ceyra-border);
       border-radius: 14px; border-bottom-left-radius: 5px; }
     .ceyra-typing span { width: 5px; height: 5px; border-radius: 50%; background: var(--ceyra-brand, #8B5CF6); animation: ceyra-bounce 1s infinite; }
     .ceyra-typing span:nth-child(2) { animation-delay: 0.15s; }
     .ceyra-typing span:nth-child(3) { animation-delay: 0.3s; }
     @keyframes ceyra-bounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-4px); } }
 
-    .ceyra-footer { padding: 6px 12px 9px; text-align: center; background: var(--ceyra-bg);
+    .ceyra-footer { padding: 6px 12px 9px; text-align: center; background: transparent;
       border-top: 1px solid var(--ceyra-border); flex-shrink: 0; }
     .ceyra-footer a { font-size: 10px; font-weight: 600; letter-spacing: 0.02em;
       color: var(--ceyra-muted); text-decoration: none; }
