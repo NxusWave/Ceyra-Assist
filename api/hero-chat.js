@@ -34,14 +34,11 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "An internal error occurred. Please try again later." });
     }
 
-    const ai = new GoogleGenAI({
-      apiKey,
-      httpOptions: {
-        headers: {
-          "User-Agent": "aistudio-build",
-        },
-      },
-    });
+    // NOTE: deliberately no `httpOptions.headers["User-Agent"]` override here.
+    // The "aistudio-build" User-Agent is AI Studio boilerplate and causes the
+    // Gemini call to fail when the function runs outside AI Studio (Vercel).
+    // widget-chat.js builds its client the same way and works in production.
+    const ai = new GoogleGenAI({ apiKey });
 
     const systemInstruction = buildSystemInstruction({ businessName, chatbotName, tone, replyLanguage });
 
@@ -59,11 +56,10 @@ export default async function handler(req, res) {
     console.error("hero-chat error:", error);
 
     const message = error?.message || "";
+    const status = error?.status;
     const isRateLimited =
-      message.includes("429") ||
-      message.toLowerCase().includes("quota") ||
-      message.toLowerCase().includes("overloaded") ||
-      message.toLowerCase().includes("resource_exhausted");
+      status === 429 ||
+      /429|quota|resource.?exhausted|overloaded|high demand|rate limit/i.test(message);
 
     if (isRateLimited) {
       return res.status(429).json({
@@ -71,6 +67,12 @@ export default async function handler(req, res) {
       });
     }
 
-    return res.status(500).json({ error: "An error occurred while processing your request. Please try again later." });
+    // TEMPORARY DIAGNOSTIC: surface the underlying cause to the caller so a
+    // failure can be identified from the browser Network tab / Vercel logs.
+    // Remove `errorDetail` once the endpoint is confirmed healthy.
+    return res.status(500).json({
+      error: "An error occurred while processing your request. Please try again later.",
+      errorDetail: message || String(error),
+    });
   }
 }

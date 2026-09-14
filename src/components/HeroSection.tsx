@@ -65,11 +65,13 @@ export default function HeroSection({
       const data = await res.json().catch(() => null);
 
       if (!res.ok) {
-        if (data && data.error) {
-          setLiveReply(data.error);
-        } else {
-          setLiveReply('Having trouble connecting right now, try again in a moment');
-        }
+        // hero-chat returns `error` for hard failures and `reply` for
+        // retryable ones (e.g. 429 "assistant is busy") — surface whichever
+        // came back so the user sees a helpful message instead of a generic one.
+        const failureMessage =
+          (data && (data.error || data.reply)) ||
+          'Having trouble connecting right now, try again in a moment';
+        setLiveReply(failureMessage);
         return;
       }
 
