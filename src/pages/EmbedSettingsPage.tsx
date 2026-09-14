@@ -445,7 +445,7 @@ export default function EmbedSettingsPage() {
               <div className="p-4 rounded-2xl bg-[#09090C] border border-white/10 font-mono text-xs text-gray-300 overflow-x-auto selection:bg-violet-600 selection:text-white leading-relaxed">
                 <span className="text-violet-400">&lt;script</span>{' '}
                 <span className="text-blue-400">src</span>=
-                <span className="text-emerald-400">"https://assist.ceyra.ai/widget.js"</span>{' '}
+                <span className="text-emerald-400">"https://ceyra-assist.vercel.app/widget.js"</span>{' '}
                 <span className="text-blue-400">data-chatbot-id</span>=
                 <span className="text-emerald-400">"{chatbotId || '{chatbot_id}'}"</span>{' '}
                 <span className="text-amber-400">async</span>
