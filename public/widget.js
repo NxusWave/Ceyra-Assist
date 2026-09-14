@@ -81,8 +81,8 @@
       height: 520px; max-height: calc(100vh - 110px); border-radius: 18px; overflow: hidden;
       display: none; flex-direction: column; z-index: 999999;
       border: 1px solid var(--ceyra-border); background: var(--ceyra-bg);
-      backdrop-filter: blur(20px) saturate(1.6);
-      -webkit-backdrop-filter: blur(20px) saturate(1.6);
+      backdrop-filter: blur(24px) saturate(1.7);
+      -webkit-backdrop-filter: blur(24px) saturate(1.7);
       box-shadow: 0 18px 50px rgba(0,0,0,0.30);
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       transform-origin: bottom right; animation: ceyra-pop 0.18s ease-out;
@@ -90,18 +90,18 @@
     .ceyra-window.open { display: flex; }
     @keyframes ceyra-pop { from { opacity: 0; transform: scale(0.95) translateY(8px); } to { opacity: 1; transform: none; } }
 
-    /* Light theme — clearly frosted glass; the host site shows through */
-    .ceyra-window { --ceyra-bg: rgba(255,255,255,0.55); --ceyra-border: rgba(17,17,26,0.10);
+    /* Light theme — highly transparent frosted glass */
+    .ceyra-window { --ceyra-bg: rgba(255,255,255,0.42); --ceyra-border: rgba(17,17,26,0.10);
       --ceyra-text: #17171f;
       --ceyra-bot-text: #26262e;
-      --ceyra-input-bg: rgba(255,255,255,0.5); --ceyra-input-border: rgba(17,17,26,0.12);
+      --ceyra-input-bg: rgba(255,255,255,0.38); --ceyra-input-border: rgba(17,17,26,0.12);
       --ceyra-muted: #6d6d7a; }
     /* Dark theme — follows visitors (and dark host sites) automatically */
     @media (prefers-color-scheme: dark) {
-      .ceyra-window { --ceyra-bg: rgba(26,26,34,0.82); --ceyra-border: rgba(255,255,255,0.09);
+      .ceyra-window { --ceyra-bg: rgba(18,18,26,0.62); --ceyra-border: rgba(255,255,255,0.09);
         --ceyra-text: #f1f1f5;
         --ceyra-bot-text: #e9e9ef;
-        --ceyra-input-bg: rgba(255,255,255,0.08); --ceyra-input-border: rgba(255,255,255,0.13);
+        --ceyra-input-bg: rgba(255,255,255,0.06); --ceyra-input-border: rgba(255,255,255,0.13);
         --ceyra-muted: #9c9caa; }
     }
     /* Browsers without backdrop-filter fall back to a near-solid surface */
