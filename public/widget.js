@@ -81,26 +81,27 @@
       height: 520px; max-height: calc(100vh - 110px); border-radius: 18px; overflow: hidden;
       display: none; flex-direction: column; z-index: 999999;
       border: 1px solid var(--ceyra-border); background: var(--ceyra-bg);
-      backdrop-filter: blur(18px) saturate(1.5);
-      -webkit-backdrop-filter: blur(18px) saturate(1.5);
+      backdrop-filter: blur(20px) saturate(1.6);
+      -webkit-backdrop-filter: blur(20px) saturate(1.6);
       box-shadow: 0 18px 50px rgba(0,0,0,0.30);
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      transform-origin: bottom right; animation: ceyra-pop 0.18s ease-out; }
+      transform-origin: bottom right; animation: ceyra-pop 0.18s ease-out;
+      overscroll-behavior: contain; }
     .ceyra-window.open { display: flex; }
     @keyframes ceyra-pop { from { opacity: 0; transform: scale(0.95) translateY(8px); } to { opacity: 1; transform: none; } }
 
-    /* Light theme — blurred translucent glass; the host site shows through */
-    .ceyra-window { --ceyra-bg: rgba(255,255,255,0.66); --ceyra-border: rgba(17,17,26,0.08);
+    /* Light theme — lighter frosted glass; the host site softly shows through */
+    .ceyra-window { --ceyra-bg: rgba(255,255,255,0.84); --ceyra-border: rgba(17,17,26,0.08);
       --ceyra-text: #17171f;
       --ceyra-bot-text: #26262e;
-      --ceyra-input-bg: rgba(255,255,255,0.55); --ceyra-input-border: rgba(17,17,26,0.10);
+      --ceyra-input-bg: rgba(255,255,255,0.72); --ceyra-input-border: rgba(17,17,26,0.10);
       --ceyra-muted: #6d6d7a; }
     /* Dark theme — follows visitors (and dark host sites) automatically */
     @media (prefers-color-scheme: dark) {
-      .ceyra-window { --ceyra-bg: rgba(15,15,20,0.62); --ceyra-border: rgba(255,255,255,0.09);
+      .ceyra-window { --ceyra-bg: rgba(26,26,34,0.82); --ceyra-border: rgba(255,255,255,0.09);
         --ceyra-text: #f1f1f5;
         --ceyra-bot-text: #e9e9ef;
-        --ceyra-input-bg: rgba(255,255,255,0.07); --ceyra-input-border: rgba(255,255,255,0.13);
+        --ceyra-input-bg: rgba(255,255,255,0.08); --ceyra-input-border: rgba(255,255,255,0.13);
         --ceyra-muted: #9c9caa; }
     }
     /* Browsers without backdrop-filter fall back to a near-solid surface */
@@ -128,7 +129,12 @@
     .ceyra-close:hover { background: rgba(255,255,255,0.32); }
     .ceyra-close svg { width: 12px; height: 12px; }
     .ceyra-body { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px;
-      background: transparent; }
+      background: transparent; overscroll-behavior: contain;
+      scrollbar-width: thin; scrollbar-color: rgba(130,130,150,0.45) transparent; }
+    .ceyra-body::-webkit-scrollbar { width: 6px; }
+    .ceyra-body::-webkit-scrollbar-track { background: transparent; }
+    .ceyra-body::-webkit-scrollbar-thumb { background: rgba(130,130,150,0.45); border-radius: 999px; }
+    .ceyra-body::-webkit-scrollbar-thumb:hover { background: rgba(130,130,150,0.7); }
     .ceyra-msg { max-width: 82%; font-size: 13px; line-height: 1.5;
       word-wrap: break-word; white-space: pre-wrap; }
     /* Bot replies: transparent, clean — no bubble chrome, brand-tinted label only */
@@ -185,6 +191,68 @@
 
   function renderUnavailable() {
     win.innerHTML = '<div class="ceyra-unavailable">Chat is currently unavailable.<br/>Please try again later.</div>';
+  }
+
+  // --- Config caching + branding ---
+  var CONFIG_CACHE_KEY = 'ceyra_cfg_' + chatbotId;
+  var CONFIG_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
+  function cachedConfig() {
+    try {
+      var raw = localStorage.getItem(CONFIG_CACHE_KEY);
+      if (!raw) return null;
+      var parsed = JSON.parse(raw);
+      if (parsed && parsed._ts && Date.now() - parsed._ts < CONFIG_CACHE_TTL && parsed.name) {
+        return parsed;
+      }
+    } catch (e) {
+      /* corrupted cache — ignore */
+    }
+    return null;
+  }
+
+  function cacheConfig(cfg) {
+    try {
+      localStorage.setItem(CONFIG_CACHE_KEY, JSON.stringify(Object.assign({}, cfg, { _ts: Date.now() })));
+    } catch (e) {
+      /* storage full/unavailable — caching is best-effort */
+    }
+  }
+
+  // Applies the user's selected brand colour to the bubble instantly.
+  function applyBrand() {
+    if (!config) return;
+    var color = /^#[0-9a-fA-F]{3,8}$/.test(config.primaryColor || '') ? config.primaryColor : '#8B5CF6';
+    bubble.style.background = 'linear-gradient(135deg,' + color + ',' + shade(color, -18) + ')';
+    bubble.style.color = contrastText(color);
+  }
+
+  function fetchConfig() {
+    // Serve from the cache first so the bubble is on-brand immediately
+    var cached = cachedConfig();
+    if (cached && !isConfigured) {
+      config = cached;
+      isConfigured = true;
+      applyBrand();
+      if (isOpen) renderWindow();
+    }
+    if (cached && isConfigured) return Promise.resolve();
+
+    return fetch(API_BASE + '/api/widget-config?chatbotId=' + encodeURIComponent(chatbotId))
+      .then(function (r) {
+        if (!r.ok) throw new Error('config fetch failed');
+        return r.json();
+      })
+      .then(function (data) {
+        config = data;
+        isConfigured = true;
+        cacheConfig(data);
+        applyBrand();
+        if (isOpen) renderWindow();
+      })
+      .catch(function () {
+        if (!config) renderUnavailable();
+      });
   }
 
   function renderWindow() {
@@ -251,7 +319,7 @@
             conversationId = data.conversationId;
             localStorage.setItem(storageKeyConvo, conversationId);
           }
-          appendMessage(data.reply || 'Sorry, something went wrong.', 'bot', color);
+          appendMessage(data.reply || data.error || 'Sorry, something went wrong.', 'bot', color);
         })
         .catch(function () {
           hideTyping();
@@ -300,24 +368,22 @@
     win.classList.toggle('open', isOpen);
     bubble.innerHTML = isOpen ? ICON_CLOSE : ICON_CHAT;
 
-    if (isOpen && !isConfigured) {
-      fetch(API_BASE + '/api/widget-config?chatbotId=' + encodeURIComponent(chatbotId))
-        .then(function (r) {
-          if (!r.ok) throw new Error('config fetch failed');
-          return r.json();
-        })
-        .then(function (data) {
-          config = data;
-          isConfigured = true;
-          renderWindow();
-        })
-        .catch(function () {
-          renderUnavailable();
-        });
+    // Only (re)render when the window body isn't built yet — reopening must
+    // preserve the visitor's chat history.
+    if (isOpen && !win.querySelector('.ceyra-body')) {
+      if (isConfigured) {
+        renderWindow();
+      } else {
+        fetchConfig(); // renders the window when the config arrives
+      }
     }
   }
 
   bubble.addEventListener('click', toggleWindow);
+
+  // Preload branding on page load so the bubble shows the user's selected
+  // colour immediately (cached for 10 minutes to avoid repeat requests).
+  fetchConfig();
 
   // Close with Escape — handy when the widget overlaps host content
   document.addEventListener('keydown', function (e) {

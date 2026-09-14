@@ -201,11 +201,28 @@ export default async function handler(req, res) {
       replyLanguage: chatbot.reply_language,
     });
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3.7-flash",
-      contents: message,
-      config: { systemInstruction },
-    });
+    let response;
+    try {
+      response = await ai.models.generateContent({
+        model: "gemini-3.7-flash",
+        contents: message,
+        config: { systemInstruction },
+      });
+    } catch (geminiErr) {
+      const status = geminiErr?.status;
+      const msg = String(geminiErr?.message || geminiErr);
+      // Google-side quota/overload errors — surface a friendly, retryable
+      // message instead of a raw 500.
+      if (
+        status === 429 ||
+        /429|quota|resource.?exhausted|overloaded|high demand|rate limit/i.test(msg)
+      ) {
+        return res.status(429).json({
+          error: "The assistant is busy right now — please send your message again in a moment.",
+        });
+      }
+      throw geminiErr;
+    }
 
     const reply = response.text || "Sorry, I could not generate a response.";
 
