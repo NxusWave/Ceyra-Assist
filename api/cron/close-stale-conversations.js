@@ -1,9 +1,15 @@
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+let _supabaseAdmin = null;
+function getSupabaseAdmin() {
+  if (!_supabaseAdmin) {
+    _supabaseAdmin = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+  }
+  return _supabaseAdmin;
+}
 
 export default async function handler(req, res) {
   const authHeader = req.headers.authorization;
@@ -13,7 +19,7 @@ export default async function handler(req, res) {
 
   const threshold = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-  const { error, count } = await supabaseAdmin
+  const { error, count } = await getSupabaseAdmin()
     .from("conversations")
     .update({ status: "closed" })
     .eq("status", "open")

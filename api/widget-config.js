@@ -1,9 +1,15 @@
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "https://placeholder.supabase.co",
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || "placeholder-key"
-);
+let _supabaseAdmin = null;
+function getSupabaseAdmin() {
+  if (!_supabaseAdmin) {
+    _supabaseAdmin = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+  }
+  return _supabaseAdmin;
+}
 
 function extractHostname(origin) {
   if (!origin) return null;
@@ -39,7 +45,7 @@ export default async function handler(req, res) {
     const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
 
     if (!isLocalhost) {
-      const { data: allowedDomains } = await supabaseAdmin
+      const { data: allowedDomains } = await getSupabaseAdmin()
         .from("chatbot_domains")
         .select("domain")
         .eq("chatbot_id", chatbotId);
@@ -54,7 +60,7 @@ export default async function handler(req, res) {
 
     res.setHeader("Access-Control-Allow-Origin", origin);
 
-    const { data: chatbot, error } = await supabaseAdmin
+    const { data: chatbot, error } = await getSupabaseAdmin()
       .from("chatbots")
       .select("public_agent_name, avatar_url, primary_color, welcome_message")
       .eq("id", chatbotId)

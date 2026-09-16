@@ -1,9 +1,15 @@
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+let _supabaseAdmin = null;
+function getSupabaseAdmin() {
+  if (!_supabaseAdmin) {
+    _supabaseAdmin = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+  }
+  return _supabaseAdmin;
+}
 
 function extractHostname(origin) {
   if (!origin) return null;
@@ -34,7 +40,7 @@ export default async function handler(req, res) {
   try {
     const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
     if (!isLocalhost) {
-      const { data: allowedDomains } = await supabaseAdmin
+      const { data: allowedDomains } = await getSupabaseAdmin()
         .from("chatbot_domains")
         .select("domain")
         .eq("chatbot_id", chatbotId);
@@ -46,7 +52,7 @@ export default async function handler(req, res) {
 
     res.setHeader("Access-Control-Allow-Origin", origin);
 
-    const { data: convo } = await supabaseAdmin
+    const { data: convo } = await getSupabaseAdmin()
       .from("conversations")
       .select("mode, chatbot_id")
       .eq("id", conversationId)
@@ -56,7 +62,7 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: "Conversation not found." });
     }
 
-    let query = supabaseAdmin
+    let query = getSupabaseAdmin()
       .from("messages")
       .select("id, role, content, created_at")
       .eq("conversation_id", conversationId)

@@ -5,10 +5,16 @@ import { generateReply, isRateLimitError } from "../lib/geminiChat.js";
 // (Vercel supports up to 60s; default is far shorter and causes 500s).
 export const maxDuration = 60;
 
-const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "https://placeholder.supabase.co",
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || "placeholder-key"
-);
+let _supabaseAdmin = null;
+function getSupabaseAdmin() {
+  if (!_supabaseAdmin) {
+    _supabaseAdmin = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+  }
+  return _supabaseAdmin;
+}
 
 function extractHostname(origin) {
   if (!origin) return null;
@@ -70,7 +76,7 @@ export default async function handler(req, res) {
     const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
 
     if (!isLocalhost) {
-      const { data: allowedDomains } = await supabaseAdmin
+      const { data: allowedDomains } = await getSupabaseAdmin()
         .from("chatbot_domains")
         .select("domain")
         .eq("chatbot_id", chatbotId);
@@ -123,7 +129,7 @@ export default async function handler(req, res) {
     }
 
     // --- 3. Fetch chatbot config (business name via FK join) ---
-    const { data: chatbot, error: chatbotError } = await supabaseAdmin
+    const { data: chatbot, error: chatbotError } = await getSupabaseAdmin()
       .from("chatbots")
       .select("chatbot_name, public_agent_name, tone, reply_language, welcome_message, business_id, businesses(name)")
       .eq("id", chatbotId)
@@ -142,7 +148,7 @@ export default async function handler(req, res) {
 
     if (convoId) {
       // Check the existing conversation's status + mode in one query
-      const { data: existingConvo } = await supabaseAdmin
+      const { data: existingConvo } = await getSupabaseAdmin()
         .from("conversations")
         .select("id, status, mode")
         .eq("id", convoId)
@@ -159,7 +165,7 @@ export default async function handler(req, res) {
 
     if (!convoId) {
       finalVisitorId = finalVisitorId || (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : generateVisitorId());
-      const { data: newConvo } = await supabaseAdmin
+      const { data: newConvo } = await getSupabaseAdmin()
         .from("conversations")
         .insert({
           chatbot_id: chatbotId,
@@ -174,7 +180,7 @@ export default async function handler(req, res) {
 
     // --- 5. Log the user's message ---
     if (convoId) {
-      await supabaseAdmin.from("messages").insert({
+      await getSupabaseAdmin().from("messages").insert({
         conversation_id: convoId,
         role: "user",
         content: message,
@@ -227,12 +233,12 @@ export default async function handler(req, res) {
     // --- 7. Log the bot's reply + update conversation timestamp (parallel) ---
     if (convoId) {
       await Promise.all([
-        supabaseAdmin.from("messages").insert({
+        getSupabaseAdmin().from("messages").insert({
           conversation_id: convoId,
           role: "assistant",
           content: reply,
         }),
-        supabaseAdmin
+        getSupabaseAdmin()
           .from("conversations")
           .update({ last_message_at: new Date().toISOString() })
           .eq("id", convoId),
