@@ -16,7 +16,7 @@ interface ConversationRow {
   id: string;
   visitor_id: string | null;
   status: string | null;
-  created_at: string | null;
+  started_at: string | null;
   last_message_at: string | null;
 }
 
@@ -67,7 +67,7 @@ export default function ConversationsPage() {
         setError(null);
         const { data, error: fetchError } = await supabase
           .from('conversations')
-          .select('id, visitor_id, status, created_at, last_message_at')
+          .select('id, visitor_id, status, started_at, last_message_at')
           .eq('chatbot_id', chatbotId)
           .order('last_message_at', { ascending: false, nullsFirst: false })
           .limit(100);
@@ -207,7 +207,7 @@ export default function ConversationsPage() {
                   </div>
                   <div className="flex items-center gap-1.5 text-[11px] text-gray-500">
                     <Clock className="w-3 h-3" />
-                    {relativeTime(convo.last_message_at || convo.created_at)}
+                    {relativeTime(convo.last_message_at || convo.started_at)}
                   </div>
                 </button>
               ))}
@@ -248,7 +248,7 @@ export default function ConversationsPage() {
                         {visitorLabel(selected.visitor_id)}
                       </p>
                       <p className="text-[10px] text-gray-500">
-                        Started {relativeTime(selected.created_at)}
+                        Started {relativeTime(selected.started_at)}
                       </p>
                     </div>
                   </div>
