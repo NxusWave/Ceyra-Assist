@@ -122,24 +122,12 @@ export default async function handler(req, res) {
       }
     }
 
-    // --- 3 + 4. Fetch chatbot config (business name via FK join) and validate
-    // the conversation in parallel — cuts ~1 round trip off every message ---
-    const chatbotPromise = supabaseAdmin
+    // --- 3. Fetch chatbot config (business name via FK join) ---
+    const { data: chatbot, error: chatbotError } = await supabaseAdmin
       .from("chatbots")
       .select("chatbot_name, public_agent_name, tone, reply_language, welcome_message, business_id, businesses(name)")
       .eq("id", chatbotId)
       .single();
-
-    const conversationPromise = conversationId
-      ? supabaseAdmin
-          .from("conversations")
-          .select("id, chatbot_id, visitor_id")
-          .eq("id", conversationId)
-          .maybeSingle()
-      : Promise.resolve({ data: null });
-
-    const [{ data: chatbot, error: chatbotError }, { data: existingConvo }] =
-      await Promise.all([chatbotPromise, conversationPromise]);
 
     if (chatbotError || !chatbot) {
       return res.status(404).json({ error: "Chatbot not found." });
@@ -147,25 +135,30 @@ export default async function handler(req, res) {
 
     const businessName = chatbot.businesses?.name || null;
 
-    // Reuse the conversation only if it belongs to this chatbot + visitor —
-    // prevents injecting messages into someone else's conversation.
-    let convoId = null;
+    // --- 4. Resolve conversation & check mode ---
+    let convoId = conversationId;
     let finalVisitorId = visitorId;
+    let conversationMode = 'ai';
 
-    const belongsToBot = existingConvo && existingConvo.chatbot_id === chatbotId;
-    const belongsToVisitor =
-      !existingConvo?.visitor_id ||
-      !finalVisitorId ||
-      existingConvo.visitor_id === finalVisitorId;
+    if (convoId) {
+      // Check the existing conversation's status + mode in one query
+      const { data: existingConvo } = await supabaseAdmin
+        .from("conversations")
+        .select("id, status, mode")
+        .eq("id", convoId)
+        .single();
 
-    if (belongsToBot && belongsToVisitor) {
-      convoId = existingConvo.id;
+      if (!existingConvo || existingConvo.status === "closed") {
+        // Referenced conversation is closed (or missing) — start a
+        // fresh one instead of reopening it
+        convoId = null;
+      } else {
+        conversationMode = existingConvo.mode || "ai";
+      }
     }
-    // Otherwise: invalid or foreign conversationId — start a fresh
-    // conversation. The widget self-heals from the new ID we return.
 
     if (!convoId) {
-      finalVisitorId = finalVisitorId || generateVisitorId();
+      finalVisitorId = finalVisitorId || (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : generateVisitorId());
       const { data: newConvo } = await supabaseAdmin
         .from("conversations")
         .insert({
@@ -176,6 +169,7 @@ export default async function handler(req, res) {
         .select()
         .single();
       convoId = newConvo?.id;
+      conversationMode = "ai"; // brand-new conversations always start in AI mode
     }
 
     // --- 5. Log the user's message ---
@@ -184,6 +178,16 @@ export default async function handler(req, res) {
         conversation_id: convoId,
         role: "user",
         content: message,
+      });
+    }
+
+    // If a human has taken over, skip Gemini entirely and return early
+    if (conversationMode === "human") {
+      return res.status(200).json({
+        reply: null,
+        mode: "human",
+        conversationId: convoId,
+        visitorId: finalVisitorId,
       });
     }
 
@@ -237,6 +241,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       reply,
+      mode: "ai",
       conversationId: convoId,
       visitorId: finalVisitorId,
     });

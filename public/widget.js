@@ -22,6 +22,8 @@
   var visitorId = getOrCreateVisitorId();
   var conversationId = localStorage.getItem(storageKeyConvo) || null;
   var config = null;
+  var pollInterval = null;
+  var lastPolledAt = null;
   var isOpen = false;
   var isConfigured = false; // becomes true once config successfully loads
 
@@ -319,7 +321,13 @@
             conversationId = data.conversationId;
             localStorage.setItem(storageKeyConvo, conversationId);
           }
-          appendMessage(data.reply || data.error || 'Sorry, something went wrong.', 'bot', color);
+          if (data.mode === 'human' && !pollInterval) {
+            startPolling();
+          }
+
+          if (data.reply) {
+            appendMessage(data.reply, 'bot', color);
+          }
         })
         .catch(function () {
           hideTyping();
@@ -361,6 +369,36 @@
   function hideTyping() {
     var el = document.getElementById('ceyra-typing-indicator');
     if (el) el.remove();
+  }
+
+  function startPolling() {
+    lastPolledAt = new Date().toISOString();
+    pollInterval = setInterval(function () {
+      var url = API_BASE + '/api/widget-poll?chatbotId=' + encodeURIComponent(chatbotId) +
+        '&conversationId=' + encodeURIComponent(conversationId) +
+        '&since=' + encodeURIComponent(lastPolledAt);
+      fetch(url)
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          (data.messages || []).forEach(function (msg) {
+            if (msg.role === 'assistant' || msg.role === 'agent') {
+              appendMessage(msg.content, 'bot', config.primaryColor);
+            }
+            lastPolledAt = msg.created_at;
+          });
+          if (data.mode === 'ai') {
+            stopPolling();
+          }
+        })
+        .catch(function () {});
+    }, 4000);
+  }
+
+  function stopPolling() {
+    if (pollInterval) {
+      clearInterval(pollInterval);
+      pollInterval = null;
+    }
   }
 
   function toggleWindow() {

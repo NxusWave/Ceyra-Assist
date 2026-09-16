@@ -5,6 +5,8 @@ import { defineConfig, type Plugin } from 'vite';
 import handler from './api/hero-chat.js';
 import widgetHandler from './api/widget-chat.js';
 import widgetConfigHandler from './api/widget-config.js';
+import widgetPollHandler from './api/widget-poll.js';
+import closeStaleHandler from './api/cron/close-stale-conversations.js';
 
 function apiMiddlewarePlugin(): Plugin {
   return {
@@ -16,14 +18,20 @@ function apiMiddlewarePlugin(): Plugin {
         if (
           pathname === '/api/hero-chat' ||
           pathname === '/api/widget-chat' ||
-          pathname === '/api/widget-config'
+          pathname === '/api/widget-config' ||
+          pathname === '/api/widget-poll' ||
+          pathname === '/api/cron/close-stale-conversations'
         ) {
           const routeHandler =
             pathname === '/api/hero-chat'
               ? handler
               : pathname === '/api/widget-chat'
               ? widgetHandler
-              : widgetConfigHandler;
+              : pathname === '/api/widget-config'
+              ? widgetConfigHandler
+              : pathname === '/api/widget-poll'
+              ? widgetPollHandler
+              : closeStaleHandler;
 
           const parsedUrl = new URL(rawUrl, 'http://localhost:3000');
           const query = Object.fromEntries(parsedUrl.searchParams.entries());
