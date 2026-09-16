@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { X, Sparkles, CheckCircle2, ArrowRight, Shield, Mail, AlertCircle, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import { resolvePlanId, planLabel } from '../lib/plans';
 
 export const SIGNUP_PRODUCT = 'assist';
 
@@ -26,8 +27,13 @@ export default function DemoModal({
     company: '',
     website: '',
     primaryLang: 'trilingual',
-    plan: initialProductOrPlan,
   });
+
+  // Normalize whatever the CTA passed ('Growth', 'Ceyra Assist', legacy
+  // labels...) into a valid plan id. Derived from the current prop on every
+  // render (not first-mount state), so re-opening the modal with a different
+  // CTA always shows/persists the right plan.
+  const planId = resolvePlanId(initialProductOrPlan);
 
   if (!isOpen) return null;
 
@@ -48,7 +54,7 @@ export default function DemoModal({
             company: formData.company,
             website: formData.website,
             primary_lang: formData.primaryLang,
-            plan: formData.plan,
+            plan: planId,
           },
         },
       });
@@ -76,7 +82,7 @@ export default function DemoModal({
             business_id: businessId,
             product: SIGNUP_PRODUCT,
             status: 'trial',
-            plan: 'starter',
+            plan: planId,
           });
         } catch (postSignupErr) {
           console.warn('Notice creating package row on signup:', postSignupErr);
@@ -118,6 +124,12 @@ export default function DemoModal({
           <div>
             <div className="inline-flex px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold uppercase tracking-widest text-violet-400 mb-3">
               Get Started with Ceyra
+            </div>
+
+            {/* Visible plan selection — matches the CTA the user came from */}
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-violet-600/15 border border-violet-500/30 rounded-full text-[11px] font-semibold text-violet-300 mb-4 mr-2">
+              <Sparkles className="w-3.5 h-3.5" />
+              Selected plan: {planLabel(planId)} · 7-day free trial
             </div>
 
             <h3 className="text-2xl font-bold text-white mb-1">

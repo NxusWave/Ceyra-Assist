@@ -246,7 +246,7 @@ export default function PricingSection({ onSelectPlan }: PricingSectionProps) {
                   <button
                     type="button"
                     id={`pricing-plan-btn-${plan.id}`}
-                    onClick={() => onSelectPlan(plan.name)}
+                    onClick={() => onSelectPlan(plan.id)}
                     className="w-full py-3.5 rounded-full text-sm font-semibold text-white bg-violet-600 hover:bg-violet-500 shadow-lg shadow-violet-600/25 transition-all flex items-center justify-center gap-2 group active:scale-98"
                   >
                     <span>Start Free Trial</span>
@@ -268,10 +268,10 @@ export default function PricingSection({ onSelectPlan }: PricingSectionProps) {
         <div className="mt-14 text-center text-xs text-gray-400">
           Need custom volume, private cloud hosting in Sri Lanka, or custom API endpoints?{' '}
           <button
-            onClick={() => onSelectPlan('Custom Enterprise')}
+            onClick={() => onSelectPlan('enterprise')}
             className="text-violet-400 font-semibold hover:underline"
           >
-            Contact our Colombo enterprise team
+            Contact us
           </button>
         </div>
       </div>

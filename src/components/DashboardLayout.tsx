@@ -17,11 +17,15 @@ import CeyraLogo from './CeyraLogo';
 import BusinessAvatar from './BusinessAvatar';
 import { supabase } from '../lib/supabaseClient';
 import { SIGNUP_PRODUCT } from './DemoModal';
+import { resolvePlanId } from '../lib/plans';
+import { computeTrial } from '../lib/trial';
+import TrialBanner from './TrialBanner';
 
 interface ProductPackage {
   product: string;
   plan: string;
   status: string;
+  created_at?: string;
 }
 
 const productName = (product: string) => {
@@ -112,7 +116,7 @@ export default function DashboardLayout() {
         // 3. All products (packages) owned by this user
         const { data: packageRows } = await supabase
           .from('packages')
-          .select('product, plan, status')
+          .select('product, plan, status, created_at')
           .eq('user_id', currentUser.id);
 
         if (isMounted) {
@@ -120,7 +124,8 @@ export default function DashboardLayout() {
             setProducts(packageRows as ProductPackage[]);
           } else {
             // Fallback: the signup product is always provisioned on first load
-            setProducts([{ product: SIGNUP_PRODUCT, plan: 'starter', status: 'trial' }]);
+            // (plan resolved from signup metadata, e.g. pricing CTA choice)
+            setProducts([{ product: SIGNUP_PRODUCT, plan: resolvePlanId(currentUser.user_metadata?.plan), status: 'trial' }]);
           }
         }
       } finally {
@@ -137,6 +142,14 @@ export default function DashboardLayout() {
 
   const businessDisplayName =
     business?.name || user?.user_metadata?.company || 'My Business';
+
+  // Trial status for the owner's assist package — drives the persistent
+  // banner shown on every /dashboard/* page (null for paid plans).
+  const assistPackage = products.find((p) => p.product === SIGNUP_PRODUCT);
+  const trial =
+    assistPackage && assistPackage.status === 'trial'
+      ? computeTrial(assistPackage.created_at)
+      : null;
 
   const handleSignOut = async () => {
     setSigningOut(true);
@@ -355,6 +368,9 @@ export default function DashboardLayout() {
 
         {/* Routed page content */}
         <div className="flex-1 min-w-0">
+          <div className="px-4 sm:px-6 lg:px-8 pt-6">
+            <TrialBanner trial={trial} />
+          </div>
           <Outlet />
         </div>
       </div>

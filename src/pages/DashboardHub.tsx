@@ -16,6 +16,7 @@ import {
 import CeyraLogo from '../components/CeyraLogo';
 import { supabase } from '../lib/supabaseClient';
 import { SIGNUP_PRODUCT } from '../components/DemoModal';
+import { resolvePlanId } from '../lib/plans';
 
 interface PackageItem {
   id?: string;
@@ -122,7 +123,7 @@ export default function DashboardHub() {
                   user_id: currentUser.id,
                   product: SIGNUP_PRODUCT,
                   status: 'trial',
-                  plan: 'starter',
+                  plan: resolvePlanId(currentUser.user_metadata?.plan),
                   business_id: businessId,
                 },
               ])
@@ -155,7 +156,7 @@ export default function DashboardHub() {
                 {
                   product: SIGNUP_PRODUCT,
                   status: 'trial',
-                  plan: 'starter',
+                  plan: resolvePlanId(currentUser.user_metadata?.plan),
                   business_id: businessId,
                 },
               ]);
@@ -167,7 +168,7 @@ export default function DashboardHub() {
               {
                 product: SIGNUP_PRODUCT,
                 status: 'trial',
-                plan: 'starter',
+                plan: resolvePlanId(currentUser.user_metadata?.plan),
                 business_id: businessId,
               },
             ]);

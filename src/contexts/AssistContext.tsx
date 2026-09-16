@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { SIGNUP_PRODUCT } from '../components/DemoModal';
+import { resolvePlanId } from '../lib/plans';
 
 interface AssistContextValue {
   user: any;
@@ -82,7 +83,7 @@ export function AssistProvider({ children }: { children: ReactNode }) {
               user_id: currentUser.id,
               product: SIGNUP_PRODUCT,
               status: 'trial',
-              plan: 'starter',
+              plan: resolvePlanId(currentUser.user_metadata?.plan),
               business_id: businessId,
             }]);
           }
@@ -101,7 +102,7 @@ export function AssistProvider({ children }: { children: ReactNode }) {
             .maybeSingle();
           if (packageRows?.plan) resolvedPlan = packageRows.plan;
         }
-        if (isMounted) setPlan((resolvedPlan || 'starter').toLowerCase());
+        if (isMounted) setPlan((resolvedPlan || resolvePlanId(currentUser.user_metadata?.plan)).toLowerCase());
 
         // ensure chatbot row exists
         if (businessId) {

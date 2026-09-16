@@ -314,15 +314,36 @@
           visitorId: visitorId,
         }),
       })
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
+        .then(function (r) {
+          return r.json().then(function (data) {
+            return { ok: r.ok, data: data || {} };
+          });
+        })
+        .then(function (res) {
           hideTyping();
+          var data = res.data || {};
+
           if (data.conversationId && data.conversationId !== conversationId) {
             conversationId = data.conversationId;
             localStorage.setItem(storageKeyConvo, conversationId);
           }
           if (data.mode === 'human' && !pollInterval) {
             startPolling();
+          }
+
+          if (!res.ok) {
+            if (data.code === 'TRIAL_EXPIRED') {
+              appendMessage(
+                'This assistant is currently unavailable — its free trial has ended.',
+                'bot',
+                color
+              );
+            } else if (data.error) {
+              appendMessage(data.error, 'bot', color);
+            } else {
+              appendMessage('Sorry, having trouble connecting. Please try again.', 'bot', color);
+            }
+            return;
           }
 
           if (data.reply) {

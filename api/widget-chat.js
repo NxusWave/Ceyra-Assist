@@ -1,6 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 import { generateReply, isRateLimitError } from "../lib/geminiChat.js";
 
+// 7-day free trial window (kept in sync with src/lib/trial.ts).
+const TRIAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
+
 // Give the serverless function room for cold starts + Gemini latency
 // (Vercel supports up to 60s; default is far shorter and causes 500s).
 export const maxDuration = 60;
@@ -44,6 +47,29 @@ function buildSystemInstruction({ businessName, chatbotName, tone, replyLanguage
     langInstruction = `Always reply in ${replyLanguage}, regardless of what language the customer writes in.`;
   }
   return `You are "${chatbotName || "the assistant"}", the AI customer support assistant for "${businessName}". Speak in a ${(tone || "friendly").toLowerCase()} tone. ${langInstruction} Keep answers short and directly useful. If asked something specific you don't have details about, politely say you'd connect them with the team for that, without inventing details.`;
+}
+
+// True only when the owner's assist package exists, is still on 'trial' and
+// started more than 7 days ago. Missing/unknown data never blocks chat
+// (fail-open so paid users are never locked out by an infra hiccup).
+async function isTrialExpired(ownerId) {
+  if (!ownerId) return false;
+  try {
+    const { data: pkg } = await getSupabaseAdmin()
+      .from("packages")
+      .select("status, created_at")
+      .eq("user_id", ownerId)
+      .eq("product", "assist")
+      .maybeSingle();
+
+    if (!pkg || pkg.status !== "trial" || !pkg.created_at) return false;
+    const startedAt = new Date(pkg.created_at).getTime();
+    if (Number.isNaN(startedAt)) return false;
+    return Date.now() - startedAt > TRIAL_DURATION_MS;
+  } catch (err) {
+    console.error("widget-chat trial check skipped:", err?.message || err);
+    return false;
+  }
 }
 
 export default async function handler(req, res) {
@@ -131,7 +157,7 @@ export default async function handler(req, res) {
     // --- 3. Fetch chatbot config (business name via FK join) ---
     const { data: chatbot, error: chatbotError } = await getSupabaseAdmin()
       .from("chatbots")
-      .select("chatbot_name, public_agent_name, tone, reply_language, welcome_message, business_id, businesses(name)")
+      .select("chatbot_name, public_agent_name, tone, reply_language, welcome_message, business_id, businesses(owner_id, name)")
       .eq("id", chatbotId)
       .single();
 
@@ -140,6 +166,16 @@ export default async function handler(req, res) {
     }
 
     const businessName = chatbot.businesses?.name || null;
+
+    // --- 3b. Trial enforcement: visitors get no AI replies once the owner's
+    // 7-day trial has expired (paid plans pass through untouched).
+    const trialExpired = await isTrialExpired(chatbot.businesses?.owner_id);
+    if (trialExpired) {
+      return res.status(403).json({
+        error: "This assistant is currently unavailable — its free trial has ended.",
+        code: "TRIAL_EXPIRED",
+      });
+    }
 
     // --- 4. Resolve conversation & check mode ---
     let convoId = conversationId;

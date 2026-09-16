@@ -1,10 +1,13 @@
 import { Sparkles, ArrowRight, Bot, ShieldCheck, CheckCircle2 } from 'lucide-react';
 
 interface FinalCTAProps {
-  onOpenDemo: (plan?: string) => void;
+  /** Called for the free-trial CTA (routes visitors to the pricing cards). */
+  onOpenDemo: () => void;
+  /** Called for the "Talk to our team" CTA (opens the contact form). */
+  onContact: () => void;
 }
 
-export default function FinalCTA({ onOpenDemo }: FinalCTAProps) {
+export default function FinalCTA({ onOpenDemo, onContact }: FinalCTAProps) {
   return (
     <section className="py-24 relative overflow-hidden border-t border-white/5">
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 relative z-10">
@@ -31,7 +34,7 @@ export default function FinalCTA({ onOpenDemo }: FinalCTAProps) {
               <button
                 type="button"
                 id="final-cta-start-free-btn"
-                onClick={() => onOpenDemo('free-starter')}
+                onClick={onOpenDemo}
                 className="w-full sm:w-auto px-8 py-4 bg-white text-black font-bold rounded-xl hover:bg-gray-100 transition-all flex items-center justify-center gap-2 group active:scale-98"
               >
                 <span>Start 7-Day Free Trial</span>
@@ -41,7 +44,7 @@ export default function FinalCTA({ onOpenDemo }: FinalCTAProps) {
               <button
                 type="button"
                 id="final-cta-book-demo-btn"
-                onClick={() => onOpenDemo('enterprise-walkthrough')}
+                onClick={onContact}
                 className="w-full sm:w-auto px-8 py-4 bg-white/5 border border-white/10 text-white font-bold rounded-xl hover:bg-white/10 transition-all active:scale-98"
               >
                 Talk to our team

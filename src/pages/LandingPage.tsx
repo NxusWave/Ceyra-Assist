@@ -13,6 +13,7 @@ import FinalCTA from '../components/FinalCTA';
 import Footer from '../components/Footer';
 import DemoModal from '../components/DemoModal';
 import LoginModal from '../components/LoginModal';
+import ContactModal from '../components/ContactModal';
 import FloatingChatTester from '../components/FloatingChatTester';
 import { Language } from '../types';
 
@@ -20,17 +21,26 @@ export default function LandingPage() {
   const [demoModalOpen, setDemoModalOpen] = useState(false);
   const [selectedPlanOrProduct, setSelectedPlanOrProduct] = useState<string>('Ceyra Assist');
   const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [contactModalOpen, setContactModalOpen] = useState(false);
   const [currentLang, setCurrentLang] = useState<Language>('en');
 
   const handleOpenDemo = (planOrProduct?: string) => {
-    if (planOrProduct) {
-      setSelectedPlanOrProduct(planOrProduct);
-    }
+    // Always set explicitly so a previous selection can't leak into an
+    // unrelated CTA (e.g. open Growth, close, then click navbar Get started).
+    setSelectedPlanOrProduct(planOrProduct ? planOrProduct : 'starter');
     setDemoModalOpen(true);
   };
 
   const handleExploreProducts = () => {
     const el = document.getElementById('how-it-works');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  // Send visitors to the pricing cards instead of the signup modal.
+  const handleViewPricing = () => {
+    const el = document.getElementById('pricing');
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });
     }
@@ -52,7 +62,7 @@ export default function LandingPage() {
 
       {/* 1. Sticky Navigation */}
       <Navbar
-        onOpenDemo={handleOpenDemo}
+        onOpenDemo={handleViewPricing}
         onOpenLogin={() => setLoginModalOpen(true)}
         currentLang={currentLang}
         onChangeLang={setCurrentLang}
@@ -61,7 +71,7 @@ export default function LandingPage() {
       <main className="flex-grow">
         {/* 2. Hero Section */}
         <HeroSection
-          onOpenDemo={() => handleOpenDemo('Ceyra Assist')}
+          onOpenDemo={handleViewPricing}
           onExploreProducts={handleExploreProducts}
           selectedLang={currentLang}
           onSelectLang={setCurrentLang}
@@ -71,16 +81,16 @@ export default function LandingPage() {
         <LogoStrip />
 
         {/* 4. Featured Ceyra Assist Section */}
-        <FeaturedSupportAI onOpenDemo={handleOpenDemo} />
+        <FeaturedSupportAI onOpenDemo={handleViewPricing} />
 
         {/* 5. Three-Step "How It Works" Section */}
-        <HowItWorks onOpenDemo={() => handleOpenDemo('Ceyra Fast Setup')} />
+        <HowItWorks onOpenDemo={handleViewPricing} />
 
         {/* 6. Capabilities Bento Grid */}
         <CapabilitiesBento />
 
         {/* 7. Industry / Use-Case Cards */}
-        <IndustriesSection onOpenDemo={handleOpenDemo} />
+        <IndustriesSection onOpenDemo={handleViewPricing} />
 
         {/* 8. Testimonials Section */}
         <TestimonialsSection />
@@ -89,7 +99,7 @@ export default function LandingPage() {
         <PricingSection onSelectPlan={(plan) => handleOpenDemo(plan)} />
 
         {/* 10. Final CTA Section */}
-        <FinalCTA onOpenDemo={handleOpenDemo} />
+        <FinalCTA onOpenDemo={handleViewPricing} onContact={() => setContactModalOpen(true)} />
       </main>
 
       {/* 11. Minimal Footer */}
@@ -105,8 +115,10 @@ export default function LandingPage() {
       <LoginModal
         isOpen={loginModalOpen}
         onClose={() => setLoginModalOpen(false)}
-        onOpenRegister={() => handleOpenDemo('starter')}
+        onOpenRegister={handleViewPricing}
       />
+
+      <ContactModal isOpen={contactModalOpen} onClose={() => setContactModalOpen(false)} />
 
       <FloatingChatTester />
     </div>
