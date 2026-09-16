@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { generateReply, isRateLimitError } from "../lib/geminiChat.js";
 
 // Give the serverless function room for cold starts + Gemini latency.
 export const maxDuration = 60;
@@ -34,45 +34,33 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "An internal error occurred. Please try again later." });
     }
 
-    // NOTE: deliberately no `httpOptions.headers["User-Agent"]` override here.
-    // The "aistudio-build" User-Agent is AI Studio boilerplate and causes the
-    // Gemini call to fail when the function runs outside AI Studio (Vercel).
-    // widget-chat.js builds its client the same way and works in production.
-    const ai = new GoogleGenAI({ apiKey });
-
     const systemInstruction = buildSystemInstruction({ businessName, chatbotName, tone, replyLanguage });
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3.7-flash",
-      contents: message,
-      config: {
-        systemInstruction,
-      },
+    // Shared helper: per-model retry + model fallback (see lib/geminiChat.js).
+    const { reply, model } = await generateReply({ apiKey, message, systemInstruction });
+    return res.status(200).json({ reply, model });
+  } catch (error) {
+    console.error("hero-chat error:", {
+      message: error?.message || String(error),
+      attempts: error?.attempts,
     });
 
-    const reply = response.text || "Sorry, I could not generate a response.";
-    return res.status(200).json({ reply });
-  } catch (error) {
-    console.error("hero-chat error:", error);
-
-    const message = error?.message || "";
-    const status = error?.status;
-    const isRateLimited =
-      status === 429 ||
-      /429|quota|resource.?exhausted|overloaded|high demand|rate limit/i.test(message);
-
-    if (isRateLimited) {
+    if (isRateLimitError(error)) {
+      // Google-side quota/overload — friendly, retryable response.
       return res.status(429).json({
         reply: "The assistant is busy right now — please send your message again in a moment.",
+        // TEMPORARY DIAGNOSTIC: exposes the exact Gemini reason per attempt
+        // (quota exceeded vs model overloaded). Remove once quota is resolved.
+        errorDetail: error?.attempts?.length
+          ? error.attempts
+          : String(error?.message || error),
       });
     }
 
-    // TEMPORARY DIAGNOSTIC: surface the underlying cause to the caller so a
-    // failure can be identified from the browser Network tab / Vercel logs.
-    // Remove `errorDetail` once the endpoint is confirmed healthy.
+    // TEMPORARY DIAGNOSTIC: remove `errorDetail` once the endpoint is healthy.
     return res.status(500).json({
       error: "An error occurred while processing your request. Please try again later.",
-      errorDetail: message || String(error),
+      errorDetail: error?.message || String(error),
     });
   }
 }

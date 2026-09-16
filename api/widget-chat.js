@@ -1,5 +1,5 @@
-import { GoogleGenAI } from "@google/genai";
 import { createClient } from "@supabase/supabase-js";
+import { generateReply, isRateLimitError } from "../lib/geminiChat.js";
 
 // Give the serverless function room for cold starts + Gemini latency
 // (Vercel supports up to 60s; default is far shorter and causes 500s).
@@ -187,13 +187,12 @@ export default async function handler(req, res) {
       });
     }
 
-    // --- 6. Call Gemini ---
+    // --- 6. Call Gemini (per-model retries + model fallback) ---
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       return res.status(500).json({ error: "An internal error occurred. Please try again later." });
     }
 
-    const ai = new GoogleGenAI({ apiKey });
     const systemInstruction = buildSystemInstruction({
       businessName: businessName,
       chatbotName: chatbot.public_agent_name,
@@ -201,30 +200,25 @@ export default async function handler(req, res) {
       replyLanguage: chatbot.reply_language,
     });
 
-    let response;
+    let result;
     try {
-      response = await ai.models.generateContent({
-        model: "gemini-3.7-flash",
-        contents: message,
-        config: { systemInstruction },
-      });
+      result = await generateReply({ apiKey, message, systemInstruction });
     } catch (geminiErr) {
-      const status = geminiErr?.status;
-      const msg = String(geminiErr?.message || geminiErr);
-      // Google-side quota/overload errors — surface a friendly, retryable
-      // message instead of a raw 500.
-      if (
-        status === 429 ||
-        /429|quota|resource.?exhausted|overloaded|high demand|rate limit/i.test(msg)
-      ) {
+      if (isRateLimitError(geminiErr)) {
+        // Google-side quota/overload — friendly, retryable response.
         return res.status(429).json({
           error: "The assistant is busy right now — please send your message again in a moment.",
+          // TEMPORARY DIAGNOSTIC: exact Gemini reason per attempt (quota vs
+          // overloaded vs model missing). Remove once quota is resolved.
+          errorDetail: geminiErr?.attempts?.length
+            ? geminiErr.attempts
+            : String(geminiErr?.message || geminiErr),
         });
       }
       throw geminiErr;
     }
 
-    const reply = response.text || "Sorry, I could not generate a response.";
+    const reply = result.reply;
 
     // --- 7. Log the bot's reply + update conversation timestamp (parallel) ---
     if (convoId) {
