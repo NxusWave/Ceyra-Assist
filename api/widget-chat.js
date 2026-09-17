@@ -254,11 +254,6 @@ export default async function handler(req, res) {
         // Google-side quota/overload — friendly, retryable response.
         return res.status(429).json({
           error: "The assistant is busy right now — please send your message again in a moment.",
-          // TEMPORARY DIAGNOSTIC: exact Gemini reason per attempt (quota vs
-          // overloaded vs model missing). Remove once quota is resolved.
-          errorDetail: geminiErr?.attempts?.length
-            ? geminiErr.attempts
-            : String(geminiErr?.message || geminiErr),
         });
       }
       throw geminiErr;
@@ -296,7 +291,6 @@ export default async function handler(req, res) {
     });
     return res.status(500).json({
       error: "An error occurred while processing your request. Please try again later.",
-      errorDetail: error?.message || String(error),
     });
   }
 }
