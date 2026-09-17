@@ -96,7 +96,15 @@ export default function LandingPage() {
         <TestimonialsSection />
 
         {/* 9. Pricing Preview Section */}
-        <PricingSection onSelectPlan={(plan) => handleOpenDemo(plan)} />
+        <PricingSection
+          onSelectPlan={(plan) => {
+            if (plan === 'enterprise') {
+              setContactModalOpen(true);
+            } else {
+              handleOpenDemo(plan);
+            }
+          }}
+        />
 
         {/* 10. Final CTA Section */}
         <FinalCTA onOpenDemo={handleViewPricing} onContact={() => setContactModalOpen(true)} />
