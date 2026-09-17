@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { X, Sparkles, CheckCircle2, ArrowRight, Shield, Mail, AlertCircle, Loader2 } from 'lucide-react';
+import { X, CheckCircle2, ArrowRight, Shield, Mail, AlertCircle, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { resolvePlanId, planLabel } from '../lib/plans';
 
@@ -126,17 +126,11 @@ export default function DemoModal({
               Get Started with Ceyra
             </div>
 
-            {/* Visible plan selection — matches the CTA the user came from */}
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-violet-600/15 border border-violet-500/30 rounded-full text-[11px] font-semibold text-violet-300 mb-4 mr-2">
-              <Sparkles className="w-3.5 h-3.5" />
-              Selected plan: {planLabel(planId)} · 7-day free trial
-            </div>
-
             <h3 className="text-2xl font-bold text-white mb-1">
               Create your Trilingual AI Assistant
             </h3>
             <p className="text-xs text-gray-400 mb-6">
-              Selected Configuration: <span className="text-violet-400 font-semibold">{initialProductOrPlan}</span>
+              Selected Plan: <span className="text-violet-400 font-semibold">{planLabel(planId)} · 7-Day Free Trial</span>
             </p>
 
             {errorMessage && (
