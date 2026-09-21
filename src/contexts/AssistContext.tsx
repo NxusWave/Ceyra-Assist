@@ -86,6 +86,9 @@ export function AssistProvider({ children }: { children: ReactNode }) {
               plan: resolvePlanId(currentUser.user_metadata?.plan),
               business_id: businessId,
             }]);
+            if (businessId) {
+              await supabase.from('businesses').update({ trial_used: true }).eq('id', businessId);
+            }
           }
         } catch (pkgErr) {
           console.warn('Packages check notice:', pkgErr);

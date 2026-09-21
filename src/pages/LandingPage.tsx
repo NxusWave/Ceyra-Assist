@@ -1,5 +1,6 @@
 import React from 'react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import HeroSection from '../components/HeroSection';
 import LogoStrip from '../components/LogoStrip';
@@ -11,13 +12,16 @@ import TestimonialsSection from '../components/TestimonialsSection';
 import PricingSection from '../components/PricingSection';
 import FinalCTA from '../components/FinalCTA';
 import Footer from '../components/Footer';
-import DemoModal from '../components/DemoModal';
+import DemoModal, { SIGNUP_PRODUCT } from '../components/DemoModal';
 import LoginModal from '../components/LoginModal';
 import ContactModal from '../components/ContactModal';
 import FloatingChatTester from '../components/FloatingChatTester';
 import { Language } from '../types';
+import { supabase } from '../lib/supabaseClient';
+import { computeTrial } from '../lib/trial';
 
 export default function LandingPage() {
+  const navigate = useNavigate();
   const [demoModalOpen, setDemoModalOpen] = useState(false);
   const [selectedPlanOrProduct, setSelectedPlanOrProduct] = useState<string>('Ceyra Assist');
   const [loginModalOpen, setLoginModalOpen] = useState(false);
@@ -29,6 +33,61 @@ export default function LandingPage() {
     // unrelated CTA (e.g. open Growth, close, then click navbar Get started).
     setSelectedPlanOrProduct(planOrProduct ? planOrProduct : 'starter');
     setDemoModalOpen(true);
+  };
+
+  const handlePlanSelect = async (planId: string) => {
+    if (planId === 'enterprise') {
+      setContactModalOpen(true);
+      return;
+    }
+
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (!session) {
+      handleOpenDemo(planId);
+      return;
+    }
+
+    try {
+      const { data: packages } = await supabase
+        .from('packages')
+        .select('id, plan, status, created_at')
+        .eq('user_id', session.user.id)
+        .eq('product', SIGNUP_PRODUCT);
+
+      const trialPkg = (packages || []).find((p) => p.status === 'trial');
+
+      if (trialPkg) {
+        const trial = computeTrial(trialPkg.created_at);
+
+        if (trial?.state !== 'expired') {
+          // Still trialing — switching plans is free, trial timer
+          // is untouched, only which plan applies changes.
+          if (trialPkg.plan !== planId) {
+            await supabase.from('packages').update({ plan: planId }).eq('id', trialPkg.id);
+          }
+          navigate('/dashboard');
+          return;
+        }
+
+        // Trial expired, never converted — needs real billing.
+        navigate('/dashboard/account');
+        return;
+      }
+
+      const hasActivePaid = (packages || []).some((p) => p.status === 'active');
+      if (hasActivePaid) {
+        // Paid customer changing/adding plans — needs real billing.
+        navigate('/dashboard/account');
+        return;
+      }
+
+      // Fallback — no recognizable package state, safest default.
+      navigate('/dashboard');
+    } catch (err) {
+      console.warn('Plan select check failed:', err);
+      navigate('/dashboard');
+    }
   };
 
   const handleExploreProducts = () => {
@@ -96,15 +155,7 @@ export default function LandingPage() {
         <TestimonialsSection />
 
         {/* 9. Pricing Preview Section */}
-        <PricingSection
-          onSelectPlan={(plan) => {
-            if (plan === 'enterprise') {
-              setContactModalOpen(true);
-            } else {
-              handleOpenDemo(plan);
-            }
-          }}
-        />
+        <PricingSection onSelectPlan={handlePlanSelect} />
 
         {/* 10. Final CTA Section */}
         <FinalCTA onOpenDemo={handleViewPricing} onContact={() => setContactModalOpen(true)} />

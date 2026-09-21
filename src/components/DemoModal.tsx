@@ -84,6 +84,9 @@ export default function DemoModal({
             status: 'trial',
             plan: planId,
           });
+          if (businessId) {
+            await supabase.from('businesses').update({ trial_used: true }).eq('id', businessId);
+          }
         } catch (postSignupErr) {
           console.warn('Notice creating package row on signup:', postSignupErr);
         }

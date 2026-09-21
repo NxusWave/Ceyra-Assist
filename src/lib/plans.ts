@@ -36,3 +36,9 @@ export function planLabel(id?: string | null): string {
       return 'Starter';
   }
 }
+
+export const PLAN_LIMITS: Record<string, { maxBots: number; whatsapp: boolean }> = {
+  starter: { maxBots: 1, whatsapp: false },
+  growth: { maxBots: 5, whatsapp: true },
+  business: { maxBots: 10, whatsapp: true },
+};
