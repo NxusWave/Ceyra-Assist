@@ -1,5 +1,5 @@
 import React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import HeroSection from '../components/HeroSection';
@@ -27,6 +27,26 @@ export default function LandingPage() {
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const [currentLang, setCurrentLang] = useState<Language>('en');
+
+  useEffect(() => {
+    if (window.location.hash === '#pricing') {
+      // The target element doesn't exist yet at the moment of the
+      // browser's native hash-scroll attempt (React hasn't rendered
+      // it), so that native scroll silently fails. Retry briefly
+      // until the element actually exists, then scroll to it.
+      let attempts = 0;
+      const tryScroll = () => {
+        const el = document.getElementById('pricing');
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else if (attempts < 20) {
+          attempts++;
+          setTimeout(tryScroll, 100);
+        }
+      };
+      tryScroll();
+    }
+  }, []);
 
   const handleOpenDemo = (planOrProduct?: string) => {
     // Always set explicitly so a previous selection can't leak into an
