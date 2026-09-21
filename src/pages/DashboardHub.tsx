@@ -396,6 +396,34 @@ export default function DashboardHub() {
               );
             })}
 
+            {/* Add Another Subscription / Explore Products Card */}
+            <div className="rounded-3xl glass-panel border border-violet-500/20 p-6 flex flex-col justify-between hover:border-violet-500/40 hover:shadow-xl hover:shadow-violet-600/10 transition-all">
+              <div>
+                <div className="flex items-start justify-between gap-4 mb-4">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-violet-600/20 to-indigo-600/20 border border-violet-500/30 flex items-center justify-center text-violet-400">
+                    <Layers className="w-6 h-6" />
+                  </div>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-violet-500/10 text-violet-300 border border-violet-500/20">
+                    Ceyra Cloud
+                  </span>
+                </div>
+
+                <h3 className="text-lg font-bold text-white mb-1">Add Another Subscription</h3>
+                <p className="text-xs text-gray-400 leading-relaxed mb-4">
+                  Add another Ceyra Assist plan, or explore Voice, CRM, and other
+                  products as they launch.
+                </p>
+              </div>
+
+              <a
+                href="/#pricing"
+                className="w-full py-2.5 px-4 rounded-2xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold shadow-lg shadow-violet-600/25 transition-all flex items-center justify-center gap-1.5"
+              >
+                <span>View Plans</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </a>
+            </div>
+
             {/* Placeholder Add-on Card for Ceyra Voice / Omnichannel */}
             <div className="rounded-3xl glass-panel border border-white/10 p-6 flex flex-col justify-between border-dashed opacity-80 hover:opacity-100 transition-opacity">
               <div>
