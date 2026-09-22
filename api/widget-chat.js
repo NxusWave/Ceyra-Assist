@@ -73,6 +73,10 @@ async function isTrialExpired(ownerId) {
 }
 
 export default async function handler(req, res) {
+  console.log("DEBUG env check (widget-chat):", {
+    hasSupabaseUrl: !!process.env.SUPABASE_URL,
+    hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+  });
   const origin = req.headers.origin || "";
   const hostname = extractHostname(origin);
 
