@@ -12,6 +12,7 @@ interface TierPlan {
   monthlyPrice: string;
   annualMonthlyEquivalent: string;
   conversationsSpec: string;
+  chatbotsSpec: string;
   languagesSpec: string;
   knowledgeSpec: string;
   isPopular?: boolean;
@@ -26,10 +27,12 @@ const PRICING_TIERS: TierPlan[] = [
     monthlyPrice: 'LKR 7,500',
     annualMonthlyEquivalent: 'LKR 6,000',
     conversationsSpec: '100 / month',
+    chatbotsSpec: '1 chatbot',
     languagesSpec: 'Native Trilingual',
     knowledgeSpec: '1 Website or PDF',
     features: [
       '100 resolved conversations / month',
+      '1 AI chatbot',
       'Native Trilingual NLP (Sinhala, Tamil, English)',
       '1 Website or PDF knowledge source',
       'Standard website embed widget',
@@ -44,16 +47,18 @@ const PRICING_TIERS: TierPlan[] = [
     monthlyPrice: 'LKR 12,500',
     annualMonthlyEquivalent: 'LKR 10,000',
     conversationsSpec: '2,500 / month',
+    chatbotsSpec: 'Up to 5 chatbots',
     languagesSpec: 'Full Trilingual + Dialects',
     knowledgeSpec: 'Unlimited URLs + 25 PDFs',
     isPopular: true,
     features: [
       '2,500 resolved conversations / month',
+      'Up to 5 AI chatbots',
       'Trilingual + Singlish & Tanglish colloquial NLP',
+      'WhatsApp integration with human handover',
       'Unlimited website pages & 25 PDFs',
-      'Intelligent WhatsApp human handover',
       'Full brand customization & white-labeling',
-      'Priority Colombo WhatsApp support',
+      'Priority WhatsApp support',
     ],
   },
   {
@@ -63,15 +68,18 @@ const PRICING_TIERS: TierPlan[] = [
     monthlyPrice: 'LKR 45,000',
     annualMonthlyEquivalent: 'LKR 36,000',
     conversationsSpec: '15,000+ / month',
+    chatbotsSpec: 'Up to 10 chatbots',
     languagesSpec: 'Trilingual + Custom Vocab',
     knowledgeSpec: 'Custom Integrations',
     features: [
       '15,000+ resolved conversations / month',
+      'Up to 10 AI chatbots',
       'Trilingual with custom domain vocabularies',
+      'WhatsApp integration with human handover',
       'Real-time ERP, SQL & Inventory Sync',
       'Multi-channel & custom webhook handovers',
-      'Dedicated Sri Lanka local cloud instance',
-      'Dedicated Colombo Account Manager (24/7)',
+      'Dedicated cloud instance',
+      'Dedicated Account Manager (24/7)',
     ],
   },
 ];
@@ -213,8 +221,12 @@ export default function PricingSection({ onSelectPlan }: PricingSectionProps) {
                       <span className="text-white font-bold">{plan.conversationsSpec}</span>
                     </div>
                     <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-400">Chatbots:</span>
+                      <span className="text-white font-bold">{plan.chatbotsSpec}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
                       <span className="text-gray-400">Languages:</span>
-                      <span className={`font-bold ${isPopular ? 'text-violet-400' : 'text-white'}`}>{plan.languagesSpec}</span>
+                      <span className="text-white font-bold">{plan.languagesSpec}</span>
                     </div>
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-gray-400">Knowledge:</span>
@@ -266,7 +278,7 @@ export default function PricingSection({ onSelectPlan }: PricingSectionProps) {
 
         {/* Enterprise footnote */}
         <div className="mt-14 text-center text-xs text-gray-400">
-          Need custom volume, private cloud hosting in Sri Lanka, or custom API endpoints?{' '}
+          Need custom volume, private cloud hosting, or custom API endpoints?{' '}
           <button
             onClick={() => onSelectPlan('enterprise')}
             className="text-violet-400 font-semibold hover:underline"
