@@ -15,10 +15,14 @@ import {
   Phone,
   Info,
   X,
+  Clock,
+  AlertTriangle,
 } from 'lucide-react';
 import CeyraLogo from '../components/CeyraLogo';
 import BusinessAvatar from '../components/BusinessAvatar';
 import { supabase } from '../lib/supabaseClient';
+import { computeTrial } from '../lib/trial';
+import { planLabel } from '../lib/plans';
 
 export default function AccountPage() {
   const navigate = useNavigate();
@@ -52,6 +56,13 @@ export default function AccountPage() {
 
   // Payment method placeholder modal state
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+
+  // Owner's assist package — drives the real trial status on the billing tab
+  const [billingPkg, setBillingPkg] = useState<any>(null);
+
+  // Derived: null unless the package is currently an active/ended trial
+  const billingTrial =
+    billingPkg?.status === 'trial' ? computeTrial(billingPkg?.created_at) : null;
 
   // 1. Session check & business retrieval
   useEffect(() => {
@@ -133,6 +144,23 @@ export default function AccountPage() {
               ''
           );
           setAvatarPreview(currentBiz?.logo_url || null);
+        }
+
+        // Fetch the owner's assist package for real trial/billing status
+        try {
+          const { data: pkgRows, error: pkgError } = await supabase
+            .from('packages')
+            .select('plan, status, created_at')
+            .eq('user_id', currentUser.id)
+            .eq('product', 'assist')
+            .maybeSingle();
+
+          if (pkgError) {
+            console.warn('Notice loading billing package:', pkgError.message);
+          }
+          if (isMounted) setBillingPkg(pkgRows || null);
+        } catch (pkgErr) {
+          console.warn('Billing package fetch notice:', pkgErr);
         }
       } catch (err) {
         console.error('Account load error:', err);
@@ -738,28 +766,99 @@ export default function AccountPage() {
 
                 {/* Empty State Card */}
                 <div className="p-8 rounded-2xl bg-white/[0.02] border border-white/10 text-center space-y-4">
-                  <div className="w-12 h-12 rounded-2xl bg-violet-600/15 border border-violet-500/20 text-violet-400 flex items-center justify-center mx-auto shadow-inner">
-                    <CreditCard className="w-6 h-6" />
+                  <div
+                    className={`w-12 h-12 rounded-2xl flex items-center justify-center mx-auto shadow-inner ${
+                      billingTrial?.state === 'expired'
+                        ? 'bg-rose-500/15 border border-rose-500/20 text-rose-400'
+                        : 'bg-violet-600/15 border border-violet-500/20 text-violet-400'
+                    }`}
+                  >
+                    {billingTrial?.state === 'expired' ? (
+                      <AlertTriangle className="w-6 h-6" />
+                    ) : (
+                      <CreditCard className="w-6 h-6" />
+                    )}
                   </div>
 
                   <div className="space-y-1">
                     <h3 className="text-base font-bold text-white">
-                      No payment method on file
+                      {billingTrial?.state === 'expired'
+                        ? 'Your free trial has ended'
+                        : 'No payment method on file'}
                     </h3>
-                    <p className="text-xs text-gray-400 max-w-md mx-auto leading-relaxed">
-                      Your organization is currently enjoying an active 7-day free trial.
-                      No credit card is required to explore all trilingual AI features and deploy your assistant.
-                    </p>
+                    {billingTrial ? (
+                      <div className="text-xs text-gray-400 max-w-md mx-auto leading-relaxed space-y-2">
+                        <p>
+                          <span className="font-semibold text-gray-200">
+                            {planLabel(billingPkg?.plan)} plan
+                          </span>
+                          {' · '}
+                          <span
+                            className={
+                              billingTrial.state === 'expired'
+                                ? 'font-semibold text-rose-300'
+                                : billingTrial.state === 'ending'
+                                  ? 'font-semibold text-amber-300'
+                                  : 'font-semibold text-violet-300'
+                            }
+                          >
+                            {billingTrial.state === 'expired'
+                              ? 'Trial ended'
+                              : billingTrial.daysLeft === 1
+                                ? 'Trial ends today'
+                                : `${billingTrial.daysLeft} day${billingTrial.daysLeft === 1 ? '' : 's'} left`}
+                          </span>
+                          {billingTrial.state !== 'expired' && (
+                            <span className="text-gray-500">
+                              {' '}
+                              — ends{' '}
+                              {billingTrial.endsAt.toLocaleDateString('en-GB', {
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric',
+                              })}
+                            </span>
+                          )}
+                        </p>
+                        <p>
+                          {billingTrial.state === 'expired'
+                            ? 'Your assistant has stopped responding to visitors. Add a payment method and pick a plan to go live again.'
+                            : billingTrial.state === 'ending'
+                              ? 'Your free trial is about to end. Add a payment method now to keep your assistant answering visitors without interruption.'
+                              : 'Your free trial includes full access to all trilingual AI features. No credit card required.'}
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-400 max-w-md mx-auto leading-relaxed">
+                        Your organization is currently enjoying an active 7-day free trial.
+                        No credit card is required to explore all trilingual AI features and deploy your assistant.
+                      </p>
+                    )}
                   </div>
+
+                  {billingTrial?.state === 'ending' && (
+                    <div className="flex items-center justify-center gap-2 text-[11px] font-semibold text-amber-300">
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>Trial ending soon</span>
+                    </div>
+                  )}
 
                   <div className="pt-2">
                     <button
                       type="button"
                       onClick={() => setShowPaymentModal(true)}
-                      className="px-6 py-2.5 bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold rounded-full shadow-lg shadow-violet-600/25 transition-all flex items-center gap-2 mx-auto active:scale-98"
+                      className={`px-6 py-2.5 text-white text-xs font-semibold rounded-full shadow-lg transition-all flex items-center gap-2 mx-auto active:scale-98 ${
+                        billingTrial?.state === 'expired'
+                          ? 'bg-rose-500 hover:bg-rose-400 shadow-rose-500/25'
+                          : 'bg-violet-600 hover:bg-violet-500 shadow-violet-600/25'
+                      }`}
                     >
                       <CreditCard className="w-4 h-4" />
-                      <span>Add Payment Method</span>
+                      <span>
+                        {billingTrial?.state === 'expired'
+                          ? 'Choose a Plan'
+                          : 'Add Payment Method'}
+                      </span>
                     </button>
                   </div>
                 </div>
