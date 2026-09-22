@@ -26,10 +26,15 @@ export default async function handler(req, res) {
   const origin = req.headers.origin || "";
   const hostname = extractHostname(origin);
 
+  // Set CORS headers unconditionally, before any logic that could
+  // fail or return early — every response (success or error) must
+  // carry this, or the browser hides the real error behind a
+  // generic "blocked by CORS policy" message.
+  res.setHeader("Access-Control-Allow-Origin", origin || "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
   if (req.method === "OPTIONS") {
-    res.setHeader("Access-Control-Allow-Origin", origin || "*");
-    res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
     return res.status(204).end();
   }
 
@@ -60,7 +65,6 @@ export default async function handler(req, res) {
       }
     }
 
-    res.setHeader("Access-Control-Allow-Origin", origin);
 
     const { data: chatbot, error } = await getSupabaseAdmin()
       .from("chatbots")
