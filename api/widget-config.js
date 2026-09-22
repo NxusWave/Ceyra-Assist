@@ -1,5 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 
+export const maxDuration = 60;
+
 let _supabaseAdmin = null;
 function getSupabaseAdmin() {
   if (!_supabaseAdmin) {
