@@ -117,8 +117,16 @@ export default function LandingPage() {
     }
   };
 
-  // Send visitors to the pricing cards instead of the signup modal.
-  const handleViewPricing = () => {
+  // Signed-out visitors are sent to the pricing cards; a signed-in user
+  // clicking any generic CTA goes straight to the dashboard (like the pricing
+  // CTAs do). Their plan is deliberately NOT changed here — generic CTAs
+  // carry no plan intent; plan changes only happen via the pricing cards.
+  const handleViewPricing = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      navigate('/dashboard');
+      return;
+    }
     const el = document.getElementById('pricing');
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });
