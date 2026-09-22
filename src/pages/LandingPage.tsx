@@ -91,14 +91,14 @@ export default function LandingPage() {
         }
 
         // Trial expired, never converted — needs real billing.
-        navigate('/dashboard/account');
+        navigate('/dashboard');
         return;
       }
 
       const hasActivePaid = (packages || []).some((p) => p.status === 'active');
       if (hasActivePaid) {
         // Paid customer changing/adding plans — needs real billing.
-        navigate('/dashboard/account');
+        navigate('/dashboard');
         return;
       }
 
