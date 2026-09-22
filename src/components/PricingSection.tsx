@@ -76,7 +76,6 @@ const PRICING_TIERS: TierPlan[] = [
       'Up to 10 AI chatbots',
       'Trilingual with custom domain vocabularies',
       'WhatsApp integration with human handover',
-      'Real-time ERP, SQL & Inventory Sync',
       'Multi-channel & custom webhook handovers',
       'Dedicated cloud instance',
       'Dedicated Account Manager (24/7)',
@@ -172,6 +171,7 @@ export default function PricingSection({ onSelectPlan }: PricingSectionProps) {
                     : 'glass-panel border border-white/10 hover:border-violet-500/50 hover:shadow-xl hover:shadow-violet-600/20 hover:scale-105 hover:z-10'
                 }`}
               >
+
                 {/* Most Popular Ribbon */}
                 {isPopular && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-5 py-2 rounded-full text-center text-[10px] font-bold tracking-wide uppercase text-white bg-violet-600 shadow-lg shadow-violet-600/40 whitespace-nowrap leading-tight">
@@ -186,11 +186,6 @@ export default function PricingSection({ onSelectPlan }: PricingSectionProps) {
                       <h3 className="text-2xl font-bold text-white tracking-tight">
                         {plan.name}
                       </h3>
-                      {isPopular && (
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase text-gray-300 border border-white/20 whitespace-nowrap">
-                          Most Popular
-                        </span>
-                      )}
                     </div>
                     <p className="text-xs text-gray-400 mt-1.5 min-h-[36px] leading-relaxed">
                       {plan.forWhom}
