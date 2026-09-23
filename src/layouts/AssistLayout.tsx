@@ -2,8 +2,6 @@ import { useState, useRef, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Sliders,
-  Code2,
-  MessageSquare,
   LayoutDashboard,
   LayoutGrid,
   Home,
@@ -17,11 +15,9 @@ import CeyraLogo from '../components/CeyraLogo';
 import { AssistProvider, useAssistContext } from '../contexts/AssistContext';
 
 function BotSwitcherDropdown({ mobile = false }: { mobile?: boolean }) {
-  const { chatbotId, chatbots, botLimit, canCreateBot, createChatbot, setActiveChatbot } =
-    useAssistContext();
+  const { chatbotId, chatbots, botLimit, canCreateBot, setActiveChatbot } = useAssistContext();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const activeBot = chatbots.find((b) => b.id === chatbotId) || chatbots[0];
@@ -44,22 +40,14 @@ function BotSwitcherDropdown({ mobile = false }: { mobile?: boolean }) {
     setIsOpen(false);
   };
 
-  const handleCreateOrUpgrade = async () => {
+  const handleCreateOrUpgrade = () => {
+    setIsOpen(false);
     if (!canCreateBot) {
-      setIsOpen(false);
       navigate('/dashboard/account');
       return;
     }
-    setIsCreating(true);
-    try {
-      const newBotId = await createChatbot();
-      if (newBotId) {
-        navigate('/dashboard/assist/builder');
-      }
-    } finally {
-      setIsCreating(false);
-      setIsOpen(false);
-    }
+    // The builder opens in "create new" mode; saving there creates the chatbot.
+    navigate('/dashboard/assist/builder');
   };
 
   return (
@@ -133,15 +121,10 @@ function BotSwitcherDropdown({ mobile = false }: { mobile?: boolean }) {
               <button
                 type="button"
                 onClick={handleCreateOrUpgrade}
-                disabled={isCreating}
                 className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-violet-400 hover:text-violet-300 hover:bg-violet-600/10 transition-colors text-left"
               >
-                {isCreating ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-violet-400" />
-                ) : (
-                  <Plus className="w-3.5 h-3.5" />
-                )}
-                <span>{isCreating ? 'Creating Chatbot...' : '+ New Chatbot'}</span>
+                <Plus className="w-3.5 h-3.5" />
+                <span>+ New Chatbot</span>
               </button>
             ) : (
               <button
@@ -170,8 +153,6 @@ function AssistLayoutInner() {
   const isOverviewTab = location.pathname === '/dashboard/assist';
   const isChatbotsTab = location.pathname === '/dashboard/assist/chatbots';
   const isBuilderTab = location.pathname === '/dashboard/assist/builder';
-  const isEmbedTab = location.pathname === '/dashboard/assist/embed';
-  const isConversationsTab = location.pathname === '/dashboard/assist/conversations';
 
   if (loading) {
     return (
@@ -260,28 +241,6 @@ function AssistLayoutInner() {
           >
             <Sliders className="w-4 h-4" />
             <span>Chatbot Builder</span>
-          </Link>
-          <Link
-            to="/dashboard/assist/embed"
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 rounded-t-xl transition-colors shrink-0 ${
-              isEmbedTab
-                ? 'font-semibold border-violet-500 text-violet-300 bg-violet-600/10'
-                : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-white/[0.04]'
-            }`}
-          >
-            <Code2 className="w-4 h-4" />
-            <span>Embed & Allowed Domains</span>
-          </Link>
-          <Link
-            to="/dashboard/assist/conversations"
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 rounded-t-xl transition-colors shrink-0 ${
-              isConversationsTab
-                ? 'font-semibold border-violet-500 text-violet-300 bg-violet-600/10'
-                : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-white/[0.04]'
-            }`}
-          >
-            <MessageSquare className="w-4 h-4" />
-            <span>Conversations</span>
           </Link>
         </div>
       </div>

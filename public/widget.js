@@ -338,6 +338,12 @@
                 'bot',
                 color
               );
+            } else if (data.code === 'BOT_PAUSED') {
+              appendMessage(
+                'This assistant is currently paused.',
+                'bot',
+                color
+              );
             } else if (data.error) {
               appendMessage(data.error, 'bot', color);
             } else {

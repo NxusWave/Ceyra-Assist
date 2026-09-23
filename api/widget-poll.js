@@ -54,12 +54,17 @@ export default async function handler(req, res) {
 
     const { data: convo } = await getSupabaseAdmin()
       .from("conversations")
-      .select("mode, chatbot_id")
+      .select("mode, chatbot_id, chatbots(status)")
       .eq("id", conversationId)
       .single();
 
     if (!convo || convo.chatbot_id !== chatbotId) {
       return res.status(404).json({ error: "Conversation not found." });
+    }
+
+    // A paused bot stops receiving updates too.
+    if (convo.chatbots?.status === "paused") {
+      return res.status(403).json({ error: "This assistant is currently paused.", code: "BOT_PAUSED" });
     }
 
     let query = getSupabaseAdmin()

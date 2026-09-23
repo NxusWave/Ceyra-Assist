@@ -9,6 +9,7 @@ import {
   MessageSquare,
   Clock,
 } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { useAssistContext } from '../contexts/AssistContext';
 import { supabase } from '../lib/supabaseClient';
 
@@ -48,7 +49,16 @@ function visitorLabel(id: string | null): string {
 }
 
 export default function ConversationsPage() {
-  const { chatbotId } = useAssistContext();
+  const { chatbotId, chatbots, setActiveChatbot } = useAssistContext();
+  const location = useLocation();
+
+  // The Overview page and the per-bot builder shortcuts hand over which chatbot
+  // and which conversation to focus on through router state.
+  const focus = (location.state || {}) as { chatbotId?: string; conversationId?: string };
+  const focusChatbotId = focus.chatbotId;
+  const focusConversationId = focus.conversationId;
+
+  const activeBot = chatbots.find((b) => b.id === chatbotId);
 
   const [conversations, setConversations] = useState<ConversationRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -78,7 +88,21 @@ export default function ConversationsPage() {
           .limit(10);
 
         if (fetchError) throw fetchError;
-        setConversations(data || []);
+        const rows = data || [];
+
+        // A conversation handed over from the Overview page can be older than the
+        // recency window, so pull that single row in to keep it selectable.
+        if (focusConversationId && !rows.some((row) => row.id === focusConversationId)) {
+          const { data: focusRow } = await supabase
+            .from('conversations')
+            .select('id, visitor_id, status, started_at, last_message_at, mode')
+            .eq('chatbot_id', chatbotId)
+            .eq('id', focusConversationId)
+            .maybeSingle();
+          if (focusRow) rows.push(focusRow);
+        }
+
+        setConversations(rows);
       } catch (err: any) {
         setError(err?.message || 'Failed to load conversations.');
       } finally {
@@ -86,7 +110,7 @@ export default function ConversationsPage() {
         setLoading(false);
       }
     },
-    [chatbotId]
+    [chatbotId, focusConversationId]
   );
 
   useEffect(() => {
@@ -99,6 +123,14 @@ export default function ConversationsPage() {
     const interval = setInterval(() => loadConversations(), 20000);
     return () => clearInterval(interval);
   }, [loadConversations]);
+
+  // Handed over from the Overview page: switch to that chatbot first
+  useEffect(() => {
+    if (focusChatbotId && focusChatbotId !== chatbotId) {
+      setActiveChatbot(focusChatbotId);
+    }
+    // setActiveChatbot is a stable context setter; only the ids matter here.
+  }, [focusChatbotId, chatbotId]);
 
   const openConversation = async (id: string) => {
     setSelectedId(id);
@@ -122,6 +154,13 @@ export default function ConversationsPage() {
   };
 
   const selected = conversations.find((c) => c.id === selectedId) || null;
+
+  // Auto-open the conversation handed over from the Overview page
+  useEffect(() => {
+    if (!focusConversationId || loading || selectedId === focusConversationId) return;
+    openConversation(focusConversationId);
+    // Only re-run when the hand-over target or the load state changes.
+  }, [focusConversationId, loading, selectedId]);
 
   const toggleMode = async () => {
     if (!selected) return;
@@ -157,7 +196,11 @@ export default function ConversationsPage() {
             Conversations
           </h2>
           <p className="text-xs text-gray-400 mt-1">
-            Live chat history between visitors and your AI assistant.
+            Live chat history for{' '}
+            <span className="text-violet-300 font-medium">
+              {activeBot?.chatbot_name || 'your assistant'}
+            </span>
+            .
           </p>
         </div>
         <button
@@ -191,9 +234,9 @@ export default function ConversationsPage() {
           </div>
           <h3 className="text-base font-bold text-white">No conversations yet</h3>
           <p className="text-xs text-gray-400 max-w-sm mx-auto leading-relaxed">
-            Embed the widget on your website using the{' '}
-            <span className="text-violet-300">Embed &amp; Allowed Domains</span> tab. Visitor
-            chats will appear here in real time.
+            Embed the widget on your website from{' '}
+            <span className="text-violet-300">Manage &rarr; Embed &amp; Domains</span> on the
+            Chatbots tab. Visitor chats will appear here in real time.
           </p>
         </div>
       ) : (
