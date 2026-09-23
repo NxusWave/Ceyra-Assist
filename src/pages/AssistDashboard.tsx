@@ -22,7 +22,7 @@ type ReplyLanguage = 'Auto-detect' | 'Sinhala' | 'Tamil' | 'English';
 type Tone = 'Friendly' | 'Formal' | 'Casual';
 
 export default function AssistDashboard() {
-  const { user, business, chatbotId, setChatbotId } = useAssistContext();
+  const { user, business, chatbotId, updateLocalChatbot } = useAssistContext();
 
   // Chatbot Builder Form State
   const [chatbotName, setChatbotName] = useState('Colombo Boutique Bakery Support');
@@ -69,11 +69,13 @@ export default function AssistDashboard() {
         if (data && isMounted) {
           if (data.chatbot_name) setChatbotName(data.chatbot_name);
           if (data.public_agent_name) setPublicAgentName(data.public_agent_name);
-          if (data.avatar_url) setAvatarPreview(data.avatar_url);
+          setAvatarPreview(data.avatar_url || null);
+          setAvatarFile(null);
           if (data.primary_color) setPrimaryColor(data.primary_color);
           if (data.reply_language) setReplyLanguage(data.reply_language as ReplyLanguage);
           if (data.tone) setTone(data.tone as Tone);
           if (data.welcome_message) setWelcomeMessage(data.welcome_message);
+          setChatMessages([]);
         }
       } catch (botErr) {
         console.warn('Notice querying chatbots table in AssistDashboard:', botErr);
@@ -144,49 +146,36 @@ export default function AssistDashboard() {
         finalAvatarUrl = null;
       }
 
-      // b. Update or insert chatbot row
-      if (chatbotId) {
-        const { error: updateError } = await supabase
-          .from('chatbots')
-          .update({
-            chatbot_name: chatbotName,
-            public_agent_name: publicAgentName,
-            avatar_url: finalAvatarUrl,
-            primary_color: primaryColor,
-            reply_language: replyLanguage,
-            tone: tone,
-            welcome_message: welcomeMessage,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', chatbotId);
-
-        if (updateError) {
-          throw updateError;
-        }
-      } else {
-        const { data, error: insertError } = await supabase
-          .from('chatbots')
-          .insert({
-            business_id: business_id,
-            chatbot_name: chatbotName,
-            public_agent_name: publicAgentName,
-            avatar_url: finalAvatarUrl,
-            primary_color: primaryColor,
-            reply_language: replyLanguage,
-            tone: tone,
-            welcome_message: welcomeMessage,
-          })
-          .select()
-          .single();
-
-        if (insertError) {
-          throw insertError;
-        }
-
-        if (data) {
-          setChatbotId(data.id);
-        }
+      // b. Update chatbot row (always update by id)
+      if (!chatbotId) {
+        throw new Error('No active chatbot selected.');
       }
+
+      const { error: updateError } = await supabase
+        .from('chatbots')
+        .update({
+          chatbot_name: chatbotName,
+          public_agent_name: publicAgentName,
+          avatar_url: finalAvatarUrl,
+          primary_color: primaryColor,
+          reply_language: replyLanguage,
+          tone: tone,
+          welcome_message: welcomeMessage,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', chatbotId);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      updateLocalChatbot({
+        id: chatbotId,
+        chatbot_name: chatbotName,
+        public_agent_name: publicAgentName,
+        avatar_url: finalAvatarUrl,
+        primary_color: primaryColor,
+      });
 
       // c. On success, show notification
       setSavedNotification(true);

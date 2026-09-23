@@ -7,6 +7,7 @@ import widgetHandler from './api/widget-chat.js';
 import widgetConfigHandler from './api/widget-config.js';
 import widgetPollHandler from './api/widget-poll.js';
 import closeStaleHandler from './api/cron/close-stale-conversations.js';
+import chatbotCreateHandler from './api/chatbot-create.js';
 
 function apiMiddlewarePlugin(): Plugin {
   return {
@@ -20,7 +21,8 @@ function apiMiddlewarePlugin(): Plugin {
           pathname === '/api/widget-chat' ||
           pathname === '/api/widget-config' ||
           pathname === '/api/widget-poll' ||
-          pathname === '/api/cron/close-stale-conversations'
+          pathname === '/api/cron/close-stale-conversations' ||
+          pathname === '/api/chatbot-create'
         ) {
           const routeHandler =
             pathname === '/api/hero-chat'
@@ -31,6 +33,8 @@ function apiMiddlewarePlugin(): Plugin {
               ? widgetConfigHandler
               : pathname === '/api/widget-poll'
               ? widgetPollHandler
+              : pathname === '/api/chatbot-create'
+              ? chatbotCreateHandler
               : closeStaleHandler;
 
           const parsedUrl = new URL(rawUrl, 'http://localhost:3000');
