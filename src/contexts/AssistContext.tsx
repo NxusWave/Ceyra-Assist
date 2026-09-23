@@ -11,6 +11,7 @@ export interface AssistChatbot {
   primary_color: string | null;
   avatar_url: string | null;
   created_at?: string;
+  status?: string;
 }
 
 const BOT_LIMITS: Record<string, number> = {
@@ -34,6 +35,7 @@ interface AssistContextValue {
   createChatbot: () => Promise<string | null>;
   createError: string | null;
   updateLocalChatbot: (updated: Partial<AssistChatbot> & { id: string }) => void;
+  refreshChatbots: () => Promise<void>;
 }
 
 const AssistContext = createContext<AssistContextValue | undefined>(undefined);
@@ -169,7 +171,7 @@ export function AssistProvider({ children }: { children: ReactNode }) {
         if (businessId) {
           const { data: chatbotsData } = await supabase
             .from('chatbots')
-            .select('id, chatbot_name, public_agent_name, primary_color, avatar_url, created_at')
+            .select('id, chatbot_name, public_agent_name, primary_color, avatar_url, created_at, status')
             .eq('business_id', businessId)
             .order('created_at', { ascending: true });
 
@@ -184,7 +186,7 @@ export function AssistProvider({ children }: { children: ReactNode }) {
                 chatbot_name: `${currentBusiness?.name || 'My Business'} Support`,
                 public_agent_name: 'Ceyra Assistant',
               }])
-              .select('id, chatbot_name, public_agent_name, primary_color, avatar_url, created_at')
+              .select('id, chatbot_name, public_agent_name, primary_color, avatar_url, created_at, status')
               .single();
 
             if (createdChatbot) {
@@ -246,6 +248,21 @@ export function AssistProvider({ children }: { children: ReactNode }) {
 
   const updateLocalChatbot = (updated: Partial<AssistChatbot> & { id: string }) => {
     setChatbots(prev => prev.map(bot => bot.id === updated.id ? { ...bot, ...updated } : bot));
+  };
+
+  const refreshChatbots = async () => {
+    const businessId = business?.id;
+    if (!businessId) return;
+
+    const { data: chatbotsData } = await supabase
+      .from('chatbots')
+      .select('id, chatbot_name, public_agent_name, primary_color, avatar_url, created_at, status')
+      .eq('business_id', businessId)
+      .order('created_at', { ascending: true });
+
+    if (chatbotsData) {
+      setChatbots(chatbotsData as AssistChatbot[]);
+    }
   };
 
   const canCreateBot = chatbots.length < botLimit;
@@ -351,6 +368,7 @@ export function AssistProvider({ children }: { children: ReactNode }) {
         createChatbot,
         createError,
         updateLocalChatbot,
+        refreshChatbots,
       }}
     >
       {children}

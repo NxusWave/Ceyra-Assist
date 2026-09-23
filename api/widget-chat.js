@@ -161,12 +161,19 @@ export default async function handler(req, res) {
     // --- 3. Fetch chatbot config (business name via FK join) ---
     const { data: chatbot, error: chatbotError } = await getSupabaseAdmin()
       .from("chatbots")
-      .select("chatbot_name, public_agent_name, tone, reply_language, welcome_message, business_id, businesses(owner_id, name)")
+      .select("chatbot_name, public_agent_name, tone, reply_language, welcome_message, business_id, status, businesses(owner_id, name)")
       .eq("id", chatbotId)
       .single();
 
     if (chatbotError || !chatbot) {
       return res.status(404).json({ error: "Chatbot not found." });
+    }
+
+    if (chatbot.status === "paused") {
+      return res.status(403).json({
+        error: "This assistant is currently unavailable — its free trial has ended.",
+        code: "TRIAL_EXPIRED",
+      });
     }
 
     const businessName = chatbot.businesses?.name || null;

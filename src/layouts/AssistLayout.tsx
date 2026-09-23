@@ -5,6 +5,8 @@ import {
   Code2,
   MessageSquare,
   LayoutDashboard,
+  LayoutGrid,
+  Home,
   ArrowLeft,
   Loader2,
   ChevronDown,
@@ -52,7 +54,7 @@ function BotSwitcherDropdown({ mobile = false }: { mobile?: boolean }) {
     try {
       const newBotId = await createChatbot();
       if (newBotId) {
-        navigate('/dashboard/assist');
+        navigate('/dashboard/assist/builder');
       }
     } finally {
       setIsCreating(false);
@@ -165,6 +167,9 @@ function BotSwitcherDropdown({ mobile = false }: { mobile?: boolean }) {
 function AssistLayoutInner() {
   const { loading } = useAssistContext();
   const location = useLocation();
+  const isOverviewTab = location.pathname === '/dashboard/assist';
+  const isChatbotsTab = location.pathname === '/dashboard/assist/chatbots';
+  const isBuilderTab = location.pathname === '/dashboard/assist/builder';
   const isEmbedTab = location.pathname === '/dashboard/assist/embed';
   const isConversationsTab = location.pathname === '/dashboard/assist/conversations';
 
@@ -222,11 +227,33 @@ function AssistLayoutInner() {
           <BotSwitcherDropdown mobile />
         </div>
 
-        <div className="flex items-center gap-2 pt-2">
+        <div className="flex items-center gap-2 pt-2 overflow-x-auto">
           <Link
             to="/dashboard/assist"
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 rounded-t-xl transition-colors ${
-              !isEmbedTab && !isConversationsTab
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 rounded-t-xl transition-colors shrink-0 ${
+              isOverviewTab
+                ? 'font-semibold border-violet-500 text-violet-300 bg-violet-600/10'
+                : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-white/[0.04]'
+            }`}
+          >
+            <Home className="w-4 h-4" />
+            <span>Overview</span>
+          </Link>
+          <Link
+            to="/dashboard/assist/chatbots"
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 rounded-t-xl transition-colors shrink-0 ${
+              isChatbotsTab
+                ? 'font-semibold border-violet-500 text-violet-300 bg-violet-600/10'
+                : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-white/[0.04]'
+            }`}
+          >
+            <LayoutGrid className="w-4 h-4" />
+            <span>Chatbots</span>
+          </Link>
+          <Link
+            to="/dashboard/assist/builder"
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 rounded-t-xl transition-colors shrink-0 ${
+              isBuilderTab
                 ? 'font-semibold border-violet-500 text-violet-300 bg-violet-600/10'
                 : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-white/[0.04]'
             }`}
@@ -236,7 +263,7 @@ function AssistLayoutInner() {
           </Link>
           <Link
             to="/dashboard/assist/embed"
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 rounded-t-xl transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 rounded-t-xl transition-colors shrink-0 ${
               isEmbedTab
                 ? 'font-semibold border-violet-500 text-violet-300 bg-violet-600/10'
                 : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-white/[0.04]'
@@ -247,7 +274,7 @@ function AssistLayoutInner() {
           </Link>
           <Link
             to="/dashboard/assist/conversations"
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 rounded-t-xl transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 rounded-t-xl transition-colors shrink-0 ${
               isConversationsTab
                 ? 'font-semibold border-violet-500 text-violet-300 bg-violet-600/10'
                 : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-white/[0.04]'
