@@ -4,13 +4,11 @@ import { supabase } from '../lib/supabaseClient';
 import { useAssistContext } from '../contexts/AssistContext';
 
 export default function ChatbotsListPage() {
-  const { chatbots, botLimit, canCreateBot, createChatbot, setActiveChatbot, refreshChatbots } =
-    useAssistContext();
+  const { chatbots, botLimit, canCreateBot, refreshChatbots } = useAssistContext();
   const navigate = useNavigate();
 
   const handleManage = (id: string) => {
-    setActiveChatbot(id);
-    navigate('/dashboard/assist/builder');
+    navigate(`/dashboard/assist/bots/${id}`);
   };
 
   const handleToggleStatus = async (id: string, currentStatus: string) => {
@@ -19,13 +17,8 @@ export default function ChatbotsListPage() {
     if (refreshChatbots) await refreshChatbots();
   };
 
-  const handleCreate = async () => {
-    if (!canCreateBot) {
-      navigate('/dashboard/account');
-      return;
-    }
-    const newId = await createChatbot();
-    if (newId) navigate('/dashboard/assist/builder');
+  const handleCreate = () => {
+    navigate(canCreateBot ? '/dashboard/assist/builder' : '/dashboard/account');
   };
 
   return (

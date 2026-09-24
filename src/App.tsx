@@ -11,6 +11,8 @@ import AccountPage from './pages/AccountPage';
 import AuthSessionManager from './components/AuthSessionManager';
 import AssistOverviewPage from './pages/AssistOverviewPage';
 import ChatbotsListPage from './pages/ChatbotsListPage';
+import ChatbotManageLayout from './layouts/ChatbotManageLayout';
+import ChatbotDetailsPage from './pages/ChatbotDetailsPage';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -36,8 +38,11 @@ export default function App() {
             <Route index element={<AssistOverviewPage />} />
             <Route path="chatbots" element={<ChatbotsListPage />} />
             <Route path="builder" element={<AssistDashboard />} />
-            <Route path="embed" element={<EmbedSettingsPage />} />
-            <Route path="conversations" element={<ConversationsPage />} />
+            <Route path="bots/:chatbotId" element={<ChatbotManageLayout />}>
+              <Route index element={<ChatbotDetailsPage />} />
+              <Route path="embed" element={<EmbedSettingsPage />} />
+              <Route path="conversations" element={<ConversationsPage />} />
+            </Route>
           </Route>
           <Route path="account" element={<AccountPage />} />
         </Route>

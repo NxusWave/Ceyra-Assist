@@ -1,8 +1,6 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import {
   Sliders,
-  Code2,
-  MessageSquare,
   LayoutGrid,
   Home,
   ArrowLeft,
@@ -17,8 +15,6 @@ function AssistLayoutInner() {
   const isOverviewTab = location.pathname === '/dashboard/assist';
   const isChatbotsTab = location.pathname === '/dashboard/assist/chatbots';
   const isBuilderTab = location.pathname === '/dashboard/assist/builder';
-  const isEmbedTab = location.pathname === '/dashboard/assist/embed';
-  const isConversationsTab = location.pathname === '/dashboard/assist/conversations';
 
   if (loading) {
     return (
@@ -88,28 +84,6 @@ function AssistLayoutInner() {
           >
             <Sliders className="w-4 h-4" />
             <span>Chatbot Builder</span>
-          </Link>
-          <Link
-            to="/dashboard/assist/embed"
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 rounded-t-xl transition-colors shrink-0 ${
-              isEmbedTab
-                ? 'font-semibold border-violet-500 text-violet-300 bg-violet-600/10'
-                : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-white/[0.04]'
-            }`}
-          >
-            <Code2 className="w-4 h-4" />
-            <span>Embed & Allowed Domains</span>
-          </Link>
-          <Link
-            to="/dashboard/assist/conversations"
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 rounded-t-xl transition-colors shrink-0 ${
-              isConversationsTab
-                ? 'font-semibold border-violet-500 text-violet-300 bg-violet-600/10'
-                : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-white/[0.04]'
-            }`}
-          >
-            <MessageSquare className="w-4 h-4" />
-            <span>Conversations</span>
           </Link>
         </div>
       </div>
