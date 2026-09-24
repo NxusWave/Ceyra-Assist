@@ -1,4 +1,5 @@
-import { Routes, Route } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
 import DashboardLayout from './components/DashboardLayout';
 import DashboardHub from './pages/DashboardHub';
@@ -11,9 +12,18 @@ import AuthSessionManager from './components/AuthSessionManager';
 import AssistOverviewPage from './pages/AssistOverviewPage';
 import ChatbotsListPage from './pages/ChatbotsListPage';
 
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
+
 export default function App() {
   return (
     <>
+      <ScrollToTop />
       {/* Keeps sessions alive across visits; ends them only on manual
           sign-out or after the inactivity timeout. */}
       <AuthSessionManager />

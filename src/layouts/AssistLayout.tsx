@@ -3,7 +3,6 @@ import {
   Sliders,
   Code2,
   MessageSquare,
-  LayoutDashboard,
   LayoutGrid,
   Home,
   ArrowLeft,
@@ -52,15 +51,8 @@ function AssistLayoutInner() {
           </Link>
         </div>
 
-        <div className="pb-4 border-b border-white/10 flex items-center justify-between gap-4">
+        <div className="pb-4 border-b border-white/10">
           <h1 className="text-lg font-bold text-white">Ceyra Assist Dashboard</h1>
-          <Link
-            to="/dashboard"
-            className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-gray-300 hover:text-white transition-colors flex items-center gap-1.5 shrink-0"
-          >
-            <LayoutDashboard className="w-3.5 h-3.5" />
-            <span>Dashboard Hub</span>
-          </Link>
         </div>
 
         <div className="flex items-center gap-2 pt-2 overflow-x-auto">
