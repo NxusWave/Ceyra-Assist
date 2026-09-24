@@ -171,8 +171,8 @@ export default async function handler(req, res) {
 
     if (chatbot.status === "paused") {
       return res.status(403).json({
-        error: "This assistant is currently paused by its owner.",
-        code: "BOT_PAUSED",
+        error: "This assistant is currently unavailable — its free trial has ended.",
+        code: "TRIAL_EXPIRED",
       });
     }
 

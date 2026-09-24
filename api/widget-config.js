@@ -23,6 +23,11 @@ function extractHostname(origin) {
 }
 
 export default async function handler(req, res) {
+  console.log("DEBUG env check:", {
+    hasSupabaseUrl: !!process.env.SUPABASE_URL,
+    supabaseUrlValue: process.env.SUPABASE_URL,
+    hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+  });
   const origin = req.headers.origin || "";
   const hostname = extractHostname(origin);
 
@@ -68,46 +73,12 @@ export default async function handler(req, res) {
 
     const { data: chatbot, error } = await getSupabaseAdmin()
       .from("chatbots")
-      .select("status, public_agent_name, avatar_url, primary_color, welcome_message, businesses(owner_id)")
+      .select("public_agent_name, avatar_url, primary_color, welcome_message")
       .eq("id", chatbotId)
       .single();
 
     if (error || !chatbot) {
       return res.status(404).json({ error: "Chatbot not found." });
-    }
-
-    // A paused bot's widget must not come alive at all — the visitor sees the
-    // widget's "unavailable" state instead of a fully-rendered chat.
-    if (chatbot.status === "paused") {
-      return res.status(403).json({ error: "This assistant is currently paused.", code: "BOT_PAUSED" });
-    }
-
-    // Same policy as widget-chat: an expired trial stops serving config.
-    const ownerId = chatbot.businesses?.owner_id;
-    if (ownerId) {
-      try {
-        const { data: pkg } = await getSupabaseAdmin()
-          .from("packages")
-          .select("status, created_at")
-          .eq("user_id", ownerId)
-          .eq("product", "assist")
-          .maybeSingle();
-
-        if (
-          pkg &&
-          pkg.status === "trial" &&
-          pkg.created_at &&
-          Date.now() - new Date(pkg.created_at).getTime() > 7 * 24 * 60 * 60 * 1000
-        ) {
-          return res.status(403).json({
-            error: "This assistant is currently unavailable — its free trial has ended.",
-            code: "TRIAL_EXPIRED",
-          });
-        }
-      } catch (trialErr) {
-        // Fail-open: never block a chatbot because of an infra hiccup.
-        console.error("widget-config trial check skipped:", trialErr?.message || trialErr);
-      }
     }
 
     return res.status(200).json({

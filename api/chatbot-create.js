@@ -50,16 +50,14 @@ export default async function handler(req, res) {
 
     const { data: packages } = await supabaseAdmin
       .from("packages")
-      .select("plan, status, user_id, business_id")
-      .or(`business_id.eq.${businessId},user_id.eq.${userData.user.id}`)
+      .select("plan, status")
+      .eq("business_id", businessId)
       .in("status", ["trial", "active"]);
 
     const BOT_LIMITS = { starter: 1, growth: 5, business: 10, enterprise: 10 };
-    // Sum capacity across every subscription the business holds; floor at 1 so
-    // an unrecognized plan value can never lock a brand-new owner out.
-    const botLimit = Math.max(
-      1,
-      (packages || []).reduce((sum, pkg) => sum + (BOT_LIMITS[pkg.plan] || 0), 0)
+    const botLimit = (packages || []).reduce(
+      (sum, pkg) => sum + (BOT_LIMITS[pkg.plan] || 0),
+      0
     );
 
     const { count: currentBotCount } = await supabaseAdmin

@@ -15,7 +15,6 @@ import {
   HelpCircle,
   AlertCircle,
 } from 'lucide-react';
-import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { useAssistContext } from '../contexts/AssistContext';
 
@@ -23,25 +22,7 @@ type ReplyLanguage = 'Auto-detect' | 'Sinhala' | 'Tamil' | 'English';
 type Tone = 'Friendly' | 'Formal' | 'Casual';
 
 export default function AssistDashboard() {
-  const {
-    user,
-    business,
-    chatbotId,
-    updateLocalChatbot,
-    refreshChatbots,
-    setActiveChatbot,
-    createChatbot,
-    createError,
-    canCreateBot,
-    botLimit,
-  } = useAssistContext();
-
-  // The Chatbot Builder tab always opens "ready to create a new chatbot"
-  // (no ?bot param). ?bot=<id> opens that chatbot's saved details instead —
-  // this is how "Manage" on the Chatbots tab deep-links into the builder.
-  const [searchParams, setSearchParams] = useSearchParams();
-  const managedBotId = searchParams.get('bot');
-  const isEditMode = Boolean(managedBotId);
+  const { user, business, chatbotId, updateLocalChatbot } = useAssistContext();
 
   // Chatbot Builder Form State
   const [chatbotName, setChatbotName] = useState('Colombo Boutique Bakery Support');
@@ -68,31 +49,21 @@ export default function AssistDashboard() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Create mode: the builder is always reset to a blank, ready-to-create
-  // state. Edit mode: load the managed chatbot's saved configuration.
   useEffect(() => {
-    if (!managedBotId) {
-      setChatbotName(business?.name ? `${business.name} Support` : 'My Business Support');
-      setPublicAgentName('Ceyra Assistant');
-      setAvatarPreview(null);
-      setAvatarFile(null);
-      setPrimaryColor('#8B5CF6');
-      setReplyLanguage('Auto-detect');
-      setTone('Friendly');
-      setWelcomeMessage(
-        `Hi! Welcome to ${business?.name || 'our business'}. How can I assist you today?`
-      );
-      setChatMessages([]);
-      return;
+    if (business?.name && !chatbotId) {
+      setChatbotName(`${business.name} Support`);
     }
+  }, [business?.name, chatbotId]);
 
+  useEffect(() => {
+    if (!chatbotId) return;
     let isMounted = true;
     async function loadChatbotConfig() {
       try {
         const { data } = await supabase
           .from('chatbots')
           .select('*')
-          .eq('id', managedBotId)
+          .eq('id', chatbotId)
           .maybeSingle();
 
         if (data && isMounted) {
@@ -114,15 +85,7 @@ export default function AssistDashboard() {
     return () => {
       isMounted = false;
     };
-  }, [managedBotId, business?.name]);
-
-  // While managing a specific chatbot, keep it as the context's active bot so
-  // the per-bot Embed and Conversations views open on the right chatbot.
-  useEffect(() => {
-    if (managedBotId && chatbotId !== managedBotId) {
-      setActiveChatbot(managedBotId);
-    }
-  }, [managedBotId, chatbotId]);
+  }, [chatbotId]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({
@@ -183,83 +146,36 @@ export default function AssistDashboard() {
         finalAvatarUrl = null;
       }
 
-      if (isEditMode) {
-        // b. Edit mode: update the managed chatbot row
-        if (!managedBotId) {
-          throw new Error('No chatbot selected.');
-        }
-
-        const { error: updateError } = await supabase
-          .from('chatbots')
-          .update({
-            chatbot_name: chatbotName,
-            public_agent_name: publicAgentName,
-            avatar_url: finalAvatarUrl,
-            primary_color: primaryColor,
-            reply_language: replyLanguage,
-            tone: tone,
-            welcome_message: welcomeMessage,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', managedBotId);
-
-        if (updateError) {
-          throw updateError;
-        }
-
-        updateLocalChatbot({
-          id: managedBotId,
-          chatbot_name: chatbotName,
-          public_agent_name: publicAgentName,
-          avatar_url: finalAvatarUrl,
-          primary_color: primaryColor,
-        });
-      } else {
-        // b-alt. Create mode: provision the row through /api/chatbot-create
-        // (which enforces the plan's chatbot allowance server-side), then apply
-        // everything configured in this form to the new row.
-        if (!canCreateBot) {
-          throw new Error(
-            `You've reached the ${botLimit}-chatbot limit on your current plan. Upgrade to create more.`
-          );
-        }
-
-        const createdId = await createChatbot();
-        if (!createdId) {
-          throw new Error(createError || 'Failed to create chatbot.');
-        }
-
-        const { error: applyError } = await supabase
-          .from('chatbots')
-          .update({
-            chatbot_name: chatbotName,
-            public_agent_name: publicAgentName,
-            avatar_url: finalAvatarUrl,
-            primary_color: primaryColor,
-            reply_language: replyLanguage,
-            tone: tone,
-            welcome_message: welcomeMessage,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', createdId);
-
-        if (applyError) {
-          throw applyError;
-        }
-
-        updateLocalChatbot({
-          id: createdId,
-          chatbot_name: chatbotName,
-          public_agent_name: publicAgentName,
-          avatar_url: finalAvatarUrl,
-          primary_color: primaryColor,
-        });
-
-        if (refreshChatbots) await refreshChatbots();
-        // Flip into edit mode for the bot we just created so its Embed and
-        // Conversations views become immediately available.
-        setSearchParams({ bot: createdId }, { replace: true });
+      // b. Update chatbot row (always update by id)
+      if (!chatbotId) {
+        throw new Error('No active chatbot selected.');
       }
+
+      const { error: updateError } = await supabase
+        .from('chatbots')
+        .update({
+          chatbot_name: chatbotName,
+          public_agent_name: publicAgentName,
+          avatar_url: finalAvatarUrl,
+          primary_color: primaryColor,
+          reply_language: replyLanguage,
+          tone: tone,
+          welcome_message: welcomeMessage,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', chatbotId);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      updateLocalChatbot({
+        id: chatbotId,
+        chatbot_name: chatbotName,
+        public_agent_name: publicAgentName,
+        avatar_url: finalAvatarUrl,
+        primary_color: primaryColor,
+      });
 
       // c. On success, show notification
       setSavedNotification(true);
@@ -347,70 +263,28 @@ export default function AssistDashboard() {
       <div className="pb-6 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
-            {isEditMode ? chatbotName || 'Edit chatbot' : 'Create a new chatbot'}
+            Build your chatbot
           </h1>
           <p className="text-xs sm:text-sm text-gray-400 mt-1">
-            {isEditMode
-              ? 'Update this chatbot\u2019s branding, trilingual behavior, persona, and greeting — or jump to its embed and conversations.'
-              : 'Configure branding, trilingual behavior, persona, and greetings, then save to create your assistant.'}
+            Configure branding, trilingual behavior, persona, and greetings for your assistant.
           </p>
         </div>
 
         <div className="flex items-center gap-2.5">
-          {isEditMode && (
-            <Link
-              to="/dashboard/assist/builder"
-              className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-gray-300 hover:text-white transition-colors shrink-0"
-            >
-              + New Chatbot
-            </Link>
-          )}
           <button
             onClick={handleSaveChatbot}
-            disabled={isSaving || (!isEditMode && !canCreateBot)}
-            className="px-5 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-semibold text-white shadow-lg shadow-violet-600/25 transition-all flex items-center gap-2 shrink-0"
+            disabled={isSaving}
+            className="px-5 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-semibold text-white shadow-lg shadow-violet-600/25 transition-all flex items-center gap-2"
           >
             {isSaving ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <Check className="w-4 h-4" />
             )}
-            <span>
-              {isSaving
-                ? isEditMode
-                  ? 'Saving...'
-                  : 'Creating...'
-                : isEditMode
-                ? 'Save Changes'
-                : 'Create Chatbot'}
-            </span>
+            <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>
           </button>
         </div>
       </div>
-
-      {/* Per-bot shortcuts: only available once we know which bot we manage */}
-      {isEditMode && (
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
-            Managing:
-          </span>
-          <span className="px-3.5 py-1.5 rounded-full bg-violet-600/15 border border-violet-500/30 text-[11px] font-semibold text-violet-300">
-            Chatbot Settings
-          </span>
-          <Link
-            to="/dashboard/assist/embed"
-            className="px-3.5 py-1.5 rounded-full bg-white/5 border border-white/10 text-[11px] font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
-          >
-            Embed &amp; Domains
-          </Link>
-          <Link
-            to="/dashboard/assist/conversations"
-            className="px-3.5 py-1.5 rounded-full bg-white/5 border border-white/10 text-[11px] font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
-          >
-            Conversations
-          </Link>
-        </div>
-      )}
 
       {saveError && (
         <div className="mt-4 p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center gap-2.5 text-xs text-rose-300 animate-in fade-in">
@@ -422,24 +296,7 @@ export default function AssistDashboard() {
       {savedNotification && (
         <div className="mt-4 p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center gap-2.5 text-xs text-emerald-300 animate-in fade-in">
           <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-          <span>
-            {isEditMode
-              ? 'Chatbot configuration updated and deployed to your live channels!'
-              : 'Your new chatbot has been created. Add it to your site from Embed & Domains.'}
-          </span>
-        </div>
-      )}
-
-      {!isEditMode && !canCreateBot && (
-        <div className="mt-4 p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center gap-2.5 text-xs text-amber-300">
-          <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0" />
-          <span>
-            You&apos;ve used all {botLimit} chatbots included in your current plan.{' '}
-            <Link to="/dashboard/account" className="underline hover:text-amber-200">
-              Upgrade your plan
-            </Link>{' '}
-            to create more.
-          </span>
+          <span>Chatbot configuration updated and deployed to your live channels!</span>
         </div>
       )}
 
