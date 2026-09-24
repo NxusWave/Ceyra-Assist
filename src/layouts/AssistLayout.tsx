@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Sliders,
+  Code2,
+  MessageSquare,
   LayoutDashboard,
   LayoutGrid,
   Home,
@@ -15,9 +17,11 @@ import CeyraLogo from '../components/CeyraLogo';
 import { AssistProvider, useAssistContext } from '../contexts/AssistContext';
 
 function BotSwitcherDropdown({ mobile = false }: { mobile?: boolean }) {
-  const { chatbotId, chatbots, botLimit, canCreateBot, setActiveChatbot } = useAssistContext();
+  const { chatbotId, chatbots, botLimit, canCreateBot, createChatbot, setActiveChatbot } =
+    useAssistContext();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const activeBot = chatbots.find((b) => b.id === chatbotId) || chatbots[0];
@@ -40,14 +44,22 @@ function BotSwitcherDropdown({ mobile = false }: { mobile?: boolean }) {
     setIsOpen(false);
   };
 
-  const handleCreateOrUpgrade = () => {
-    setIsOpen(false);
+  const handleCreateOrUpgrade = async () => {
     if (!canCreateBot) {
+      setIsOpen(false);
       navigate('/dashboard/account');
       return;
     }
-    // The builder opens in "create new" mode; saving there creates the chatbot.
-    navigate('/dashboard/assist/builder');
+    setIsCreating(true);
+    try {
+      const newBotId = await createChatbot();
+      if (newBotId) {
+        navigate('/dashboard/assist/builder');
+      }
+    } finally {
+      setIsCreating(false);
+      setIsOpen(false);
+    }
   };
 
   return (
@@ -121,10 +133,15 @@ function BotSwitcherDropdown({ mobile = false }: { mobile?: boolean }) {
               <button
                 type="button"
                 onClick={handleCreateOrUpgrade}
+                disabled={isCreating}
                 className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-violet-400 hover:text-violet-300 hover:bg-violet-600/10 transition-colors text-left"
               >
-                <Plus className="w-3.5 h-3.5" />
-                <span>+ New Chatbot</span>
+                {isCreating ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-violet-400" />
+                ) : (
+                  <Plus className="w-3.5 h-3.5" />
+                )}
+                <span>{isCreating ? 'Creating Chatbot...' : '+ New Chatbot'}</span>
               </button>
             ) : (
               <button
@@ -153,6 +170,8 @@ function AssistLayoutInner() {
   const isOverviewTab = location.pathname === '/dashboard/assist';
   const isChatbotsTab = location.pathname === '/dashboard/assist/chatbots';
   const isBuilderTab = location.pathname === '/dashboard/assist/builder';
+  const isEmbedTab = location.pathname === '/dashboard/assist/embed';
+  const isConversationsTab = location.pathname === '/dashboard/assist/conversations';
 
   if (loading) {
     return (

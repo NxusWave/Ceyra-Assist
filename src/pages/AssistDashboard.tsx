@@ -405,7 +405,6 @@ export default function AssistDashboard() {
           </Link>
           <Link
             to="/dashboard/assist/conversations"
-            state={{ chatbotId: managedBotId }}
             className="px-3.5 py-1.5 rounded-full bg-white/5 border border-white/10 text-[11px] font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
           >
             Conversations
