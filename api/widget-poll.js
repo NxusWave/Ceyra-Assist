@@ -20,10 +20,11 @@ export default async function handler(req, res) {
   const origin = req.headers.origin || "";
   const hostname = extractHostname(origin);
 
+  res.setHeader("Access-Control-Allow-Origin", origin || "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
   if (req.method === "OPTIONS") {
-    res.setHeader("Access-Control-Allow-Origin", origin || "*");
-    res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
     return res.status(204).end();
   }
 
@@ -49,8 +50,6 @@ export default async function handler(req, res) {
         return res.status(403).json({ error: "This domain is not authorized for this chatbot." });
       }
     }
-
-    res.setHeader("Access-Control-Allow-Origin", origin);
 
     const { data: convo } = await getSupabaseAdmin()
       .from("conversations")

@@ -73,20 +73,15 @@ async function isTrialExpired(ownerId) {
 }
 
 export default async function handler(req, res) {
-  console.log("DEBUG env check (widget-chat):", {
-    hasSupabaseUrl: !!process.env.SUPABASE_URL,
-    hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-  });
   const origin = req.headers.origin || "";
   const hostname = extractHostname(origin);
 
+  res.setHeader("Access-Control-Allow-Origin", origin || "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
   // --- CORS: handle preflight ---
   if (req.method === "OPTIONS") {
-    // Preflight has no body context yet — allow the origin tentatively;
-    // the actual POST below still does the real domain check.
-    res.setHeader("Access-Control-Allow-Origin", origin || "*");
-    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
     return res.status(204).end();
   }
 
@@ -118,9 +113,6 @@ export default async function handler(req, res) {
         return res.status(403).json({ error: "This domain is not authorized for this chatbot." });
       }
     }
-
-    // From here on, this origin is authorized — echo it back for CORS
-    res.setHeader("Access-Control-Allow-Origin", origin);
 
     // --- 2. Rate limiting (best-effort; skip gracefully if Upstash env vars aren't set) ---
     if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
@@ -171,8 +163,8 @@ export default async function handler(req, res) {
 
     if (chatbot.status === "paused") {
       return res.status(403).json({
-        error: "This assistant is currently unavailable — its free trial has ended.",
-        code: "TRIAL_EXPIRED",
+        error: "This assistant is currently paused.",
+        code: "BOT_PAUSED",
       });
     }
 
