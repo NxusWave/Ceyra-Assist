@@ -163,8 +163,8 @@ export default async function handler(req, res) {
 
     if (chatbot.status === "paused") {
       return res.status(403).json({
-        error: "This assistant is currently paused.",
-        code: "BOT_PAUSED",
+        error: "This assistant is not available right now. Please try again later.",
+        code: "CHATBOT_PAUSED",
       });
     }
 
