@@ -23,11 +23,6 @@ function extractHostname(origin) {
 }
 
 export default async function handler(req, res) {
-  console.log("DEBUG env check:", {
-    hasSupabaseUrl: !!process.env.SUPABASE_URL,
-    supabaseUrlValue: process.env.SUPABASE_URL,
-    hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-  });
   const origin = req.headers.origin || "";
   const hostname = extractHostname(origin);
 
@@ -73,7 +68,7 @@ export default async function handler(req, res) {
 
     const { data: chatbot, error } = await getSupabaseAdmin()
       .from("chatbots")
-      .select("public_agent_name, avatar_url, primary_color, welcome_message")
+      .select("public_agent_name, avatar_url, primary_color, welcome_message, business_id")
       .eq("id", chatbotId)
       .single();
 
@@ -81,11 +76,38 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: "Chatbot not found." });
     }
 
+    let hideBranding = false;
+    try {
+      if (chatbot.business_id) {
+        const { data: business } = await getSupabaseAdmin()
+          .from("businesses")
+          .select("owner_id")
+          .eq("id", chatbot.business_id)
+          .single();
+
+        if (business?.owner_id) {
+          const { data: packages } = await getSupabaseAdmin()
+            .from("packages")
+            .select("plan")
+            .eq("user_id", business.owner_id)
+            .eq("product", "assist");
+
+          if (packages && packages.length > 0) {
+            hideBranding = packages.some((p) => p.plan && p.plan !== "starter");
+          }
+        }
+      }
+    } catch (brandingErr) {
+      console.error("widget-config branding lookup skipped:", brandingErr?.message || brandingErr);
+      hideBranding = false;
+    }
+
     return res.status(200).json({
       name: chatbot.public_agent_name || "Assistant",
       avatarUrl: chatbot.avatar_url || null,
       primaryColor: chatbot.primary_color || "#8B5CF6",
       welcomeMessage: chatbot.welcome_message || "Hi! How can I help you today?",
+      hideBranding,
     });
   } catch (error) {
     console.error("widget-config error:", error);
