@@ -270,6 +270,10 @@
       ? '<img src="' + escapeHtml(config.avatarUrl) + '" alt="" />'
       : '<div class="ceyra-avatar-fallback">' + escapeHtml(initials) + '</div>';
 
+    var footerHtml = config.hideBranding
+      ? ''
+      : '<div class="ceyra-footer"><a href="https://ceyra.ai" target="_blank" rel="noopener">Powered by Ceyra AI</a></div>';
+
     win.innerHTML =
       '<div class="ceyra-header" style="background:linear-gradient(135deg,' + color + ',' + shade(color, -18) + ');color:' + onBrand + '">' +
         avatarHtml +
@@ -286,7 +290,7 @@
         '<input class="ceyra-input" id="ceyra-input" type="text" placeholder="Type a message..." />' +
         '<button class="ceyra-send" id="ceyra-send" style="background:' + color + '" title="Send">' + ICON_SEND + '</button>' +
       '</div>' +
-      '<div class="ceyra-footer"><a href="https://ceyra.ai" target="_blank" rel="noopener">Powered by Ceyra AI</a></div>';
+      footerHtml;
 
     // Apply the brand colour across bubble + window accents
     win.style.setProperty('--ceyra-brand', color);
